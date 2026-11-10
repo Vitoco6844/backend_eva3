@@ -1,7 +1,7 @@
 # Pago previo a la entrega de herramientas
 
 ## Estado y propósito
-Diseño preparado para revisión del usuario. El usuario aprobó el flujo conceptual: solicitud → confirmación de bodega → pago Webpay confirmado → entrega firmada → saldo por tiempo adicional. Esta especificación concreta las decisiones necesarias para cambiar la aplicación existente, que ya está desplegada por el usuario en EC2. No se ha modificado código productivo ni se ha operado AWS.
+Diseño aprobado por el usuario en esta conversación; plan de implementación preparado para revisión. El usuario aprobó el flujo conceptual: solicitud → confirmación de bodega → pago Webpay confirmado → entrega firmada → saldo por tiempo adicional. Esta especificación concreta las decisiones necesarias para cambiar la aplicación existente, que ya está desplegada por el usuario en EC2. No se ha modificado código productivo ni se ha operado AWS.
 
 Es un cambio arquitectónico dentro del monolito existente: Charge actualmente exige un Loan ya entregado y solo se crea al cerrar. Hay que admitir cargos antes del préstamo, retener equipos y proteger todos los caminos de entrega. No es un cambio de ubicación de un botón.
 
