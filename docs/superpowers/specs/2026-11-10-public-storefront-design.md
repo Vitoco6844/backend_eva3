@@ -1,6 +1,6 @@
 # BuildCorp: tienda pública y solicitudes de alquiler
 
-Fecha: 2026-11-10. Estado: enfoque conversacional aprobado; especificación pendiente de revisión del usuario.
+Fecha: 2026-11-10. Estado: especificación aprobada por el usuario, con cuenta obligatoria para solicitar alquiler y página 404 propia. El asistente preparará las imágenes y actualizará prompts_ia.md al finalizar.
 
 ## Intención y alcance aprobado
 El usuario espera una experiencia pública de BuildCorp, realizada con templates de Django en el mismo proyecto, donde cualquier visitante pueda consultar herramientas y crear una cuenta. Aceptó el flujo recomendado: el cliente solicita herramientas, el bodeguero confirma la entrega con firma y el cargo definitivo se calcula después de la devolución. La versión actual implementa el panel operativo, pero no esta experiencia pública.
@@ -118,4 +118,5 @@ Actualizar README, arquitectura 4+1, modelo relacional, defensa, verificación, 
 
 ## Revisión propia de la especificación
 El registro asigna siempre la identidad en servidor; no hay asociación automática por RUT. Las solicitudes no reservan stock ni cobran; la entrega reaplica los bloqueos del dominio existente. La tarifa estimada de solicitud se distingue de la pactada al entregar y del cargo efectivo al devolver. Las obras internas no se publican. La migración es incremental y preserva credenciales/historiales. La foto pública está separada de las firmas privadas. La aprobación del enfoque conversacional permite esta especificación; queda pendiente su revisión antes de escribir el plan de implementación.
+
 
