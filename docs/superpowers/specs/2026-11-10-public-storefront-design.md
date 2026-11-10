@@ -34,6 +34,8 @@ Se agrega imagen opcional de activo, con edición autorizada al personal desde f
 Las imágenes subidas se sirven mediante una ruta pública que obtiene el archivo del activo publicado, sin aceptar rutas arbitrarias. Las firmas continúan en su endpoint privado y no se exponen mediante un directorio media público. Los archivos subidos se guardan en MEDIA_ROOT, fuera de Git; los respaldos estáticos del catálogo forman parte del código.
 
 ## Registro y titularidad
+Crear una cuenta e iniciar sesión es obligatorio para enviar cualquier solicitud de alquiler; no habrá alquiler ni solicitudes anónimas. Un visitante puede consultar el catálogo y preparar su selección; al intentar enviarla se le dirige a ingreso/registro, conservando la selección y un destino local válido para continuar después.
+
 Formulario de cliente: usuario, nombre del responsable, correo, identificación/RUT, nombre o razón social, teléfono, contraseña y confirmación. La cuenta se activa al completar un registro válido; este alcance académico no incorpora envío de correo ni verificación por email.
 
 Una transacción crea un Contractor propio y el User vinculado con rol CONTRATISTA, is_staff=False e is_superuser=False. Los campos de privilegio enviados por el navegador no se aceptan. Las contraseñas usan validadores y hash de Django; no se guardan ni registran en texto plano. Después del registro se inicia sesión y se conserva la selección de herramientas.
@@ -73,6 +75,13 @@ La operación bloquea contratista, solicitud y activos en un orden compatible co
 
 La solicitud no retiene stock. Dos clientes pueden pedir la misma herramienta; al confirmar las entregas, los bloqueos y restricciones PostgreSQL existentes permiten una sola entrega activa. La otra solicitud conserva una explicación accionable para el bodeguero.
 
+## Páginas no encontradas
+Actualmente el proyecto no tiene template 404 propio ni handler404 personalizado. Se incorporará una página pública de BuildCorp que indique «Página no encontrada» y tenga un botón «Volver al inicio» apuntando a `/`.
+
+La página funciona tanto para visitantes como para usuarios autenticados y conserva el estado HTTP 404. No redirige automáticamente ni oculta el motivo de la navegación fallida. No muestra detalles técnicos ni revela si un documento privado pertenece a otra persona. Los permisos 403 mantienen su significado y el acceso a documentos ajenos continúa protegido.
+
+La API conserva respuestas JSON con estado 404 y no se redirige a HTML. La verificación contempla URL web inexistente con DEBUG=False, visitante/usuario autenticado, enlace correcto al inicio y respuesta JSON para rutas API inexistentes.
+
 ## Seguridad e integración
 Páginas públicas y registro tienen permisos anónimos explícitos y mínimos. El resto mantiene autenticación y CSRF. Los clientes solo acceden a selección/sus solicitudes/sus préstamos/sus cargos. No se publica la API completa de inventario: se usa una proyección pública limitada de los datos del catálogo. Las acciones operativas se ejecutan a través de servicios compartidos por web/API/Admin.
 
@@ -92,6 +101,8 @@ Pruebas sobre PostgreSQL real:
 - Visitante puede abrir portada, catálogo, filtros y ficha; solo ve campos públicos y herramientas publicadas.
 - Registro válido crea cuenta de cliente y contratista propios; contraseñas inválidas, RUT inválido/duplicado y privilegios manipulados se rechazan sin altas parciales. RUT o correo conocidos no permiten asumir una cuenta existente.
 - Datos existentes, usuarios y préstamos sobreviven a las migraciones; las colisiones normalizadas se detectan antes de imponer restricciones.
+- Un visitante no puede enviar una solicitud ni generar un préstamo: se exige registro e ingreso, se conserva su selección y se puede continuar después de autenticarse.
+- Página 404 propia funciona para visitante y usuario, con botón «Volver al inicio», sin redirección automática ni detalles privados; la API responde JSON 404.
 - Selección mantiene activos sin duplicarlos; servidor recalcula precios y condiciones; envío repetido es idempotente y una selección vacía/fecha inválida se rechaza.
 - Cliente bloqueado o moroso no puede enviar ni recibir entrega; no se elude el bloqueo con un registro duplicado del mismo RUT.
 - Cliente no ve ni modifica solicitudes ajenas; solo puede cancelar las propias pendientes. Personal puede ver y resolver con motivo.
@@ -107,3 +118,4 @@ Actualizar README, arquitectura 4+1, modelo relacional, defensa, verificación, 
 
 ## Revisión propia de la especificación
 El registro asigna siempre la identidad en servidor; no hay asociación automática por RUT. Las solicitudes no reservan stock ni cobran; la entrega reaplica los bloqueos del dominio existente. La tarifa estimada de solicitud se distingue de la pactada al entregar y del cargo efectivo al devolver. Las obras internas no se publican. La migración es incremental y preserva credenciales/historiales. La foto pública está separada de las firmas privadas. La aprobación del enfoque conversacional permite esta especificación; queda pendiente su revisión antes de escribir el plan de implementación.
+
