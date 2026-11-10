@@ -44,6 +44,20 @@ class RequestConcurrencyTests(TransactionTestCase):
                 try:
                     if kind == "cancel":
                         cancel_request(request_id=pk, actor=actor)
+                    elif kind == "approve":
+                        from rentals.approval_services import (
+                            approve_request,
+                            approval_quote,
+                        )
+                        from rentals.models import RentalRequest
+
+                        req = RentalRequest.objects.get(pk=pk)
+                        approve_request(
+                            request_id=pk,
+                            site_id=self.site.pk,
+                            quote=approval_quote(req, actor),
+                            actor=actor,
+                        )
                     else:
                         fulfill_request(
                             request_id=pk,
@@ -89,10 +103,13 @@ class RequestConcurrencyTests(TransactionTestCase):
         self.assertCountEqual(
             self.race(
                 [
-                    ("fulfill", first.pk, self.operator.pk),
-                    ("fulfill", second.pk, self.operator.pk),
+                    ("approve", first.pk, self.operator.pk),
+                    ("approve", second.pk, self.operator.pk),
                 ]
             ),
             ["ok", "blocked"],
         )
-        self.assertEqual(Loan.objects.count(), 1)
+        from rentals.models import AssetHold
+
+        self.assertEqual(AssetHold.objects.count(), 1)
+        self.assertEqual(Loan.objects.count(), 0)

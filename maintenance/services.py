@@ -44,6 +44,9 @@ def save_plan(*, asset_id, due_at, due_hours, actor):
 def start_maintenance(*, asset_id, actor, notes):
     require_operator(actor)
     asset = Asset.objects.select_for_update().get(pk=asset_id)
+    from inventory.services import require_unheld
+
+    require_unheld(asset)
     if asset.status not in ("DISPONIBLE", "MANTENIMIENTO") or not notes.strip():
         raise ValidationError(
             "El activo debe estar disponible o pendiente de mantenimiento; indica el trabajo."

@@ -1,31 +1,44 @@
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from .models import Charge
 from accounts.permissions import contractor_scope
 
 
-def close_charge(loan):
-    if not loan.closed_at or loan.items.filter(returned_at=None).exists():
-        raise ValidationError("Debes devolver todas las herramientas.")
-    amount = 0
-    for line in loan.items.all():
-        duration = line.returned_at - loan.issued_at
-        micros = (
-            duration.days * 86400000000
-            + duration.seconds * 1000000
-            + duration.microseconds
-        )
-        days = max(1, (micros + 86400000000 - 1) // 86400000000)
-        amount += line.daily_rate * days
-    charge, _ = Charge.objects.get_or_create(loan=loan, defaults={"amount": amount})
-    return charge
+from .billing import close_charge
 
 
 def visible_charges(user):
-    return contractor_scope(
-        user,
-        Charge.objects.select_related("loan__contractor").order_by("-pk"),
-        "loan__contractor_id",
+    from accounts.permissions import can_operate
+
+    qs = Charge.objects.select_related(
+        "loan__contractor", "rental_request__contractor"
+    ).order_by("-pk")
+    if can_operate(user):
+        return qs
+    if not user.is_authenticated or not user.contractor_id:
+        return qs.none()
+    return qs.filter(
+        Q(rental_request__contractor_id=user.contractor_id)
+        | Q(rental_request__isnull=True, loan__contractor_id=user.contractor_id)
     )
+
+
+def lock_charge(charge_id):
+    # El mismo orden se usa al cancelar y entregar. Nunca bloquear un JOIN nullable.
+    from inventory.models import Contractor
+    from rentals.models import RentalRequest
+
+    meta = Charge.objects.values(
+        "rental_request_id", "loan__contractor_id", "rental_request__contractor_id"
+    ).get(pk=charge_id)
+    owner = meta["rental_request__contractor_id"] or meta["loan__contractor_id"]
+    Contractor.objects.select_for_update().get(pk=owner)
+    req = None
+    if meta["rental_request_id"]:
+        req = RentalRequest.objects.select_for_update().get(
+            pk=meta["rental_request_id"]
+        )
+    return Charge.objects.select_for_update().get(pk=charge_id), req
 
 
 import uuid
@@ -46,7 +59,7 @@ def _allowed(charge, actor):
         not actor.is_authenticated
         or not actor.is_active
         or not actor.contractor_id
-        or actor.contractor_id != charge.loan.contractor_id
+        or actor.contractor_id != charge.contractor_id
     ):
         raise PermissionDenied("Solo el contratista titular puede iniciar este pago.")
 
@@ -55,10 +68,14 @@ def start_payment(*, charge_id, actor):
     if settings.WEBPAY_ENV != "integration":
         raise ValidationError("Solo integración.")
     with transaction.atomic():
-        charge = (
-            Charge.objects.select_for_update().select_related("loan").get(pk=charge_id)
-        )
+        charge, req = lock_charge(charge_id)
         _allowed(charge, actor)
+        if charge.voided_at:
+            raise ValidationError("Este cargo fue anulado; no se puede pagar.")
+        if req and (req.status != "APROBADA" or req.ends_at <= timezone.now()):
+            raise ValidationError(
+                "La solicitud no está aprobada para pago o su plazo venció. Contacta a BuildCorp."
+            )
         if charge.paid_at:
             raise ValidationError("Este cargo ya está pagado.")
         if charge.attempts.filter(status__in=ACTIVE).exists():
@@ -103,7 +120,7 @@ def _apply(attempt_id, data):
         pk=attempt_id
     )
     with transaction.atomic():
-        charge = Charge.objects.select_for_update().get(pk=charge_id)
+        charge, req = lock_charge(charge_id)
         attempt = PaymentAttempt.objects.select_for_update().get(pk=attempt_id)
         if attempt.status in TERMINAL:
             return attempt
@@ -124,7 +141,14 @@ def _apply(attempt_id, data):
             attempt.authorization = str(data["authorization_code"])[:30]
             if not charge.paid_at:
                 charge.paid_at = timezone.now()
-                charge.save(update_fields=["paid_at"])
+                charge.voided_at = None
+                charge.save(update_fields=["paid_at", "voided_at"])
+                if req:
+                    if req.status == "APROBADA":
+                        req.status = "PAGADA"
+                    elif req.status not in ("PAGADA", "ENTREGADA"):
+                        req.resolution_reason = "Incidencia: pago recibido después de resolver la solicitud; requiere revisión de BuildCorp."
+                    req.save()
         elif (
             data.get("status") == "INITIALIZED"
             and attempt.token

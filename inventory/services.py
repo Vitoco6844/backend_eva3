@@ -21,6 +21,7 @@ def record_event(asset, actor, previous, kind, reason, origin=None):
 def transfer_asset(*, asset_id, warehouse_id, actor, reason):
     require_operator(actor)
     asset = Asset.objects.select_for_update().get(pk=asset_id)
+    require_unheld(asset)
     target = Warehouse.objects.select_related("site").get(pk=warehouse_id)
     if asset.status != "DISPONIBLE" or not target.active or not target.site.active:
         raise ValidationError(
@@ -39,6 +40,7 @@ def transfer_asset(*, asset_id, warehouse_id, actor, reason):
 def retire_asset(*, asset_id, actor, reason):
     require_operator(actor)
     asset = Asset.objects.select_for_update().get(pk=asset_id)
+    require_unheld(asset)
     if asset.status != "DISPONIBLE" or not reason.strip():
         raise ValidationError("La baja requiere herramienta disponible y motivo.")
     old = asset.status
@@ -46,3 +48,12 @@ def retire_asset(*, asset_id, actor, reason):
     asset.save(update_fields=["status"])
     record_event(asset, actor, old, "BAJA", reason)
     return asset
+
+
+def require_unheld(asset):
+    from rentals.models import AssetHold
+
+    if AssetHold.objects.filter(asset_id=asset.pk).exists():
+        raise ValidationError(
+            "La herramienta está retenida para una solicitud aprobada."
+        )

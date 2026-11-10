@@ -8,7 +8,6 @@ from .request_services import (
     cancel_request,
     reject_request,
     fulfill_request,
-    delivery_quote,
 )
 from .request_serializers import (
     RentalRequestSerializer,
@@ -50,19 +49,44 @@ class RentalRequestViewSet(
         )
         return Response(self.get_serializer(req).data)
 
-    @action(detail=True, methods=["get"], url_path="delivery-quote")
-    def quote(self, request, pk=None):
+    @action(detail=True, methods=["post"])
+    def approve(self, request, pk=None):
+        from .approval_services import approve_request
+        from inventory.models import Site
+        from .request_serializers import SubmitRequestSerializer
+
         require_operator(request.user)
-        req = self.get_object()
-        return Response(
-            {
-                "quote": delivery_quote(req, request.user),
-                "rates": [
-                    {"asset": line.asset_id, "daily_rate": line.asset.daily_rate}
-                    for line in req.items.select_related("asset")
-                ],
-            }
+
+        class Input(serializers.Serializer):
+            site_id = serializers.PrimaryKeyRelatedField(
+                queryset=Site.objects.filter(active=True)
+            )
+            quote = serializers.CharField()
+
+            def to_internal_value(self, data):
+                unknown = set(data) - set(self.fields)
+                if unknown:
+                    raise serializers.ValidationError(
+                        {key: "Campo no permitido." for key in unknown}
+                    )
+                return super().to_internal_value(data)
+
+        form = Input(data=request.data)
+        form.is_valid(raise_exception=True)
+        req = approve_request(
+            request_id=self.get_object().pk,
+            site_id=form.validated_data["site_id"].pk,
+            quote=form.validated_data["quote"],
+            actor=request.user,
         )
+        return Response(self.get_serializer(req).data)
+
+    @action(detail=True, methods=["get"], url_path="approval-quote")
+    def approval_summary(self, request, pk=None):
+        from .approval_services import approval_quote
+
+        require_operator(request.user)
+        return Response({"quote": approval_quote(self.get_object(), request.user)})
 
     @action(detail=True, methods=["post"])
     def fulfill(self, request, pk=None):
@@ -71,6 +95,5 @@ class RentalRequestViewSet(
         form = FulfillSerializer(data=request.data)
         form.is_valid(raise_exception=True)
         data = form.validated_data.copy()
-        data["site_id"] = data["site_id"].pk
         loan = fulfill_request(request_id=req.pk, actor=request.user, **data)
         return Response({"loan": loan.pk, "url": f"/rentals/{loan.pk}/"})

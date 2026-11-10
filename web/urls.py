@@ -11,6 +11,8 @@ urlpatterns = [
     path("mis-solicitudes/<int:pk>/", rv.detail),
     path("mis-solicitudes/<int:pk>/cancelar/", rv.cancel),
     path("solicitudes/", rv.inbox),
+    path("solicitudes/nueva/", rv.prepare),
+    path("solicitudes/<int:pk>/aprobar/", rv.approve),
     path("solicitudes/<int:pk>/entregar/", rv.fulfill),
     path("solicitudes/<int:pk>/rechazar/", rv.reject),
     path("mi-solicitud/", selection.selection),

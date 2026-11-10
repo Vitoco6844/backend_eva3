@@ -48,4 +48,16 @@ class AssetSerializer(StrictSerializer):
             raise serializers.ValidationError(
                 "Utiliza la acción de traslado para cambiar de bodega."
             )
+        if (
+            self.instance
+            and "category" in data
+            and data["category"].pk != self.instance.category_id
+        ):
+            from inventory.services import require_unheld
+            from django.core.exceptions import ValidationError
+
+            try:
+                require_unheld(self.instance)
+            except ValidationError as exc:
+                raise serializers.ValidationError(exc.messages)
         return data

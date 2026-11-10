@@ -5,7 +5,16 @@ from .models import Charge, PaymentAttempt
 class ChargeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Charge
-        fields = ["id", "loan", "amount", "created_at", "paid_at"]
+        fields = [
+            "id",
+            "loan",
+            "rental_request",
+            "kind",
+            "amount",
+            "created_at",
+            "paid_at",
+            "voided_at",
+        ]
 
 
 class PaymentAttemptSerializer(serializers.ModelSerializer):

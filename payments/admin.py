@@ -5,8 +5,16 @@ from .models import Charge, PaymentAttempt
 
 @admin.register(Charge)
 class ChargeAdmin(HistoryAdmin):
-    list_display = ("id", "loan", "amount", "created_at", "paid_at")
-    search_fields = ("loan__contractor__name",)
+    list_display = (
+        "id",
+        "kind",
+        "rental_request",
+        "loan",
+        "amount",
+        "created_at",
+        "paid_at",
+    )
+    search_fields = ("loan__contractor__name", "rental_request__contractor__name")
     list_filter = ("paid_at", "created_at")
     list_select_related = ("loan",)
 

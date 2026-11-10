@@ -136,8 +136,21 @@ class RequestTests(DomainCase):
             signature=signature(),
             actor=self.operator,
         )
-        loan = fulfill_request(**data)
-        again = fulfill_request(**data)
+        from unittest.mock import patch
+        from rentals.approval_services import approve_request, approval_quote
+
+        req = approve_request(
+            request_id=req.pk,
+            site_id=self.site.pk,
+            quote=approval_quote(req, self.operator),
+            actor=self.operator,
+        )
+        req.charges.update(paid_at=timezone.now())
+        req.status = "PAGADA"
+        req.save()
+        with patch("rentals.services.timezone.now", return_value=req.starts_at):
+            loan = fulfill_request(**data)
+            again = fulfill_request(**data)
         self.assertEqual(loan.pk, again.pk)
         self.assertEqual(Loan.objects.count(), 1)
         self.assertEqual(loan.signatures.count(), 1)
@@ -202,21 +215,18 @@ class RequestTests(DomainCase):
 
         self.assertEqual(RentalRequest.objects.count(), 1)
 
-    def test_changed_delivery_rate_requires_new_acceptance(self):
-        from rentals.request_services import delivery_quote, fulfill_request
+    def test_changed_approval_rate_requires_new_acceptance(self):
+        from rentals.approval_services import approval_quote, approve_request
         from rentals.models import Loan
 
         req = self.submit()
-        quote = delivery_quote(req, self.operator)
+        quote = approval_quote(req, self.operator)
         self.asset.daily_rate = 9000
         self.asset.save(update_fields=["daily_rate"])
         with self.assertRaises(ValidationError):
-            fulfill_request(
+            approve_request(
                 request_id=req.pk,
                 site_id=self.site.pk,
-                responsible="Ana",
-                due_at=req.ends_at,
-                signature=signature(),
                 actor=self.operator,
                 quote=quote,
             )

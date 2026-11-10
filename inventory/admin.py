@@ -60,7 +60,11 @@ class AssetAdmin(BusinessAdmin):
     list_select_related = ("category", "warehouse")
 
     def get_readonly_fields(self, request, obj=None):
-        return ["status", "usage_hours", "operations"] + (["warehouse"] if obj else [])
+        return (
+            ["status", "usage_hours", "operations"]
+            + (["warehouse"] if obj else [])
+            + (["category"] if obj and hasattr(obj, "rental_hold") else [])
+        )
 
     @admin.display(description="Operaciones e historial")
     def operations(self, obj):

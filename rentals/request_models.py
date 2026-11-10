@@ -30,8 +30,20 @@ class RentalRequest(models.Model):
         "estado", max_length=12, choices=Status, default=Status.PENDING
     )
     approved_at = models.DateTimeField(null=True, blank=True)
-    approved_by = models.ForeignKey("accounts.User", on_delete=models.PROTECT, null=True, blank=True, related_name="+")
-    approved_site = models.ForeignKey("inventory.Site", on_delete=models.PROTECT, null=True, blank=True, related_name="+")
+    approved_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    approved_site = models.ForeignKey(
+        "inventory.Site",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
     approved_amount = models.PositiveBigIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -68,7 +80,14 @@ class RentalRequest(models.Model):
             ),
             models.CheckConstraint(
                 condition=Q(
-                    status__in=["PENDIENTE", "APROBADA", "PAGADA", "ENTREGADA", "RECHAZADA", "CANCELADA"]
+                    status__in=[
+                        "PENDIENTE",
+                        "APROBADA",
+                        "PAGADA",
+                        "ENTREGADA",
+                        "RECHAZADA",
+                        "CANCELADA",
+                    ]
                 ),
                 name="request_status_valid",
             ),
@@ -113,8 +132,12 @@ class RentalRequestItem(models.Model):
 
 
 class AssetHold(models.Model):
-    request = models.ForeignKey(RentalRequest, on_delete=models.PROTECT, related_name="holds")
-    asset = models.OneToOneField("inventory.Asset", on_delete=models.PROTECT, related_name="rental_hold")
+    request = models.ForeignKey(
+        RentalRequest, on_delete=models.PROTECT, related_name="holds"
+    )
+    asset = models.OneToOneField(
+        "inventory.Asset", on_delete=models.PROTECT, related_name="rental_hold"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

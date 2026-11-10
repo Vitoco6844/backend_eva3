@@ -43,7 +43,7 @@ class WebTests(DomainCase):
         self.client.force_login(self.operator)
         loan = self.issue()
         for path in [
-            "/rentals/new/",
+            "/solicitudes/nueva/",
             f"/rentals/{loan.pk}/",
             f"/rentals/{loan.pk}/return/",
             f"/inventory/assets/{self.asset.pk}/",

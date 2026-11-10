@@ -24,20 +24,31 @@ class RentalRequestForm(forms.Form):
 
 
 class FulfillRequestForm(forms.Form):
-    site = forms.ModelChoiceField(
-        label="Obra operativa de destino", queryset=Site.objects.filter(active=True)
-    )
     responsible = forms.CharField(
         label="Responsable que firma la entrega", max_length=140
     )
-    due_at = forms.DateTimeField(
-        label="Devolución acordada",
-        widget=forms.DateTimeInput(
-            attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"
-        ),
-    )
     signature = forms.CharField(widget=forms.HiddenInput, max_length=350000)
+
+
+class ApprovalForm(forms.Form):
+    site = forms.ModelChoiceField(
+        label="Obra operativa de destino", queryset=Site.objects.filter(active=True)
+    )
     quote = forms.CharField(widget=forms.HiddenInput)
+
+
+class OperatorRequestForm(RentalRequestForm):
+    from inventory.models import Contractor, Asset
+
+    contractor = forms.ModelChoiceField(
+        label="Contratista titular del pago",
+        queryset=Contractor.objects.filter(active=True, manual_block=False),
+    )
+    assets = forms.ModelMultipleChoiceField(
+        label="Herramientas disponibles",
+        queryset=Asset.objects.filter(status="DISPONIBLE", rental_hold__isnull=True),
+        widget=forms.CheckboxSelectMultiple,
+    )
 
 
 class RejectRequestForm(forms.Form):

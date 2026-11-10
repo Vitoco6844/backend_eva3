@@ -24,12 +24,14 @@ class LoanViewSet(
         require_operator(request.user)
         form = IssueSerializer(data=request.data)
         form.is_valid(raise_exception=True)
+        from django.shortcuts import get_object_or_404
+        from .models import RentalRequest
+        from .request_services import fulfill_request
+
         data = form.validated_data.copy()
-        data["contractor_id"] = data["contractor_id"].pk
-        data["site_id"] = data["site_id"].pk
-        return Response(
-            LoanSerializer(issue_loan(**data, actor=request.user)).data, status=201
-        )
+        req = get_object_or_404(RentalRequest, pk=data.pop("request_id"))
+        loan = fulfill_request(request_id=req.pk, actor=request.user, **data)
+        return Response(LoanSerializer(loan).data, status=201)
 
     @action(detail=True, methods=["post"], url_path="return")
     def return_tools(self, request, pk=None):

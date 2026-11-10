@@ -21,6 +21,7 @@ def available_for_request(asset, at=None):
         and asset.warehouse.active
         and asset.warehouse.site.active
         and not is_due(asset, at)
+        and not hasattr(asset, "rental_hold")
     )
 
 

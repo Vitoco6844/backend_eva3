@@ -49,7 +49,7 @@ def _days(start, end):
 
 
 @transaction.atomic
-def submit_request(
+def _submit_request(
     *,
     actor,
     asset_ids,
@@ -60,8 +60,8 @@ def submit_request(
     ends_at,
     notes,
     submit_key,
+    contractor_id=None,
 ):
-    require_customer(actor)
     try:
         key = uuid.UUID(str(submit_key))
     except (ValueError, TypeError, AttributeError):
@@ -91,7 +91,9 @@ def submit_request(
         "notes": notes.strip(),
     }
     digest = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
-    contractor = Contractor.objects.select_for_update().get(pk=actor.contractor_id)
+    contractor = Contractor.objects.select_for_update().get(
+        pk=contractor_id or actor.contractor_id
+    )
     previous = (
         RentalRequest.objects.select_for_update()
         .filter(requested_by=actor, submit_key=key)
@@ -145,95 +147,94 @@ def submit_request(
     return req
 
 
-@transaction.atomic
+def submit_request(**kwargs):
+    require_customer(kwargs["actor"])
+    return _submit_request(**kwargs)
+
+
 def cancel_request(*, request_id, actor):
-    require_customer(actor)
-    req = RentalRequest.objects.select_for_update().get(pk=request_id)
-    if req.contractor_id != actor.contractor_id:
-        raise PermissionDenied("La solicitud no pertenece a tu cuenta.")
-    _pending(req)
-    req.status = "CANCELADA"
-    req.resolved_by = actor
-    req.resolved_at = timezone.now()
-    req.resolution_reason = "Cancelada por el cliente"
-    req.save()
-    return req
+    from .approval_services import resolve_unpaid
+
+    return resolve_unpaid(
+        request_id=request_id,
+        actor=actor,
+        status="CANCELADA",
+        reason="Cancelada por el cliente",
+    )
 
 
-@transaction.atomic
 def reject_request(*, request_id, reason, actor):
-    require_operator(actor)
-    req = RentalRequest.objects.select_for_update().get(pk=request_id)
-    _pending(req)
-    if not reason.strip():
-        raise ValidationError("Indica el motivo del rechazo.")
-    req.status = "RECHAZADA"
-    req.resolution_reason = reason.strip()
-    req.resolved_at = timezone.now()
-    req.resolved_by = actor
-    req.save()
-    return req
+    from .approval_services import resolve_unpaid
 
-
-def delivery_quote(req, actor):
-    rates = [
-        [line.asset_id, line.asset.daily_rate]
-        for line in req.items.select_related("asset").order_by("asset_id")
-    ]
-    return signing.dumps(
-        {"request": req.pk, "actor": actor.pk, "rates": rates},
-        salt="request-delivery",
-        compress=True,
+    return resolve_unpaid(
+        request_id=request_id, actor=actor, status="RECHAZADA", reason=reason
     )
 
 
 @transaction.atomic
 def fulfill_request(
-    *, request_id, site_id, responsible, due_at, signature, actor, quote=None
+    *, request_id, signature, responsible, actor, site_id=None, due_at=None, quote=None
 ):
     require_operator(actor)
-    contractor_id = RentalRequest.objects.values_list("contractor_id", flat=True).get(
-        pk=request_id
-    )
-    Contractor.objects.select_for_update().get(pk=contractor_id)
-    req = RentalRequest.objects.select_for_update().get(pk=request_id)
+    from .approval_services import locked_request
+    from payments.models import Charge
+    from .models import AssetHold
+
+    contractor, req = locked_request(request_id)
     if req.status == "ENTREGADA" and req.loan_id:
         return req.loan
-    _pending(req)
-    if req.ends_at <= timezone.now():
+    if req.status != "PAGADA":
         raise ValidationError(
-            "El plazo de la solicitud venció. Solicita al cliente que envíe nuevas fechas."
+            "Debes aprobar la solicitud y confirmar su pago antes de entregar."
         )
-    ids = list(req.items.values_list("asset_id", flat=True))
+    charge = Charge.objects.select_for_update().get(rental_request=req, kind="INITIAL")
+    if not charge.paid_at or charge.voided_at or charge.amount != req.approved_amount:
+        raise ValidationError(
+            "El pago inicial no está confirmado o no coincide con la aprobación."
+        )
+    if (site_id is not None and site_id != req.approved_site_id) or (
+        due_at is not None and due_at != req.ends_at
+    ):
+        raise ValidationError(
+            "Las fechas y la obra aprobadas no pueden cambiar después del pago."
+        )
+    now = timezone.now()
+    if now < req.starts_at or now >= req.ends_at:
+        raise ValidationError(
+            "Entrega fuera del período aprobado. Contacta a BuildCorp para revisar el caso."
+        )
+    lines = list(req.items.order_by("asset_id"))
+    ids = [line.asset_id for line in lines]
     assets = list(Asset.objects.select_for_update().filter(pk__in=ids).order_by("pk"))
-    if quote is not None:
-        try:
-            accepted = signing.loads(quote, salt="request-delivery", max_age=1800)
-        except signing.BadSignature as exc:
-            raise ValidationError(
-                "El resumen venció. Revisa las tarifas y vuelve a firmar."
-            ) from exc
-        if accepted != {
-            "request": req.pk,
-            "actor": actor.pk,
-            "rates": [[a.pk, a.daily_rate] for a in assets],
-        }:
-            raise ValidationError(
-                "Las tarifas cambiaron. Revisa los nuevos valores y vuelve a firmar."
-            )
-    loan = issue_loan(
+    held = set(AssetHold.objects.filter(request=req).values_list("asset_id", flat=True))
+    if held != set(ids) or not ids:
+        raise ValidationError(
+            "La retención de herramientas requiere revisión. No se modificó el pago."
+        )
+    from .services import _issue_approved_loan
+
+    loan = _issue_approved_loan(
         contractor_id=req.contractor_id,
-        site_id=site_id,
+        site_id=req.approved_site_id,
         asset_ids=ids,
-        due_at=due_at,
+        due_at=req.ends_at,
         responsible=responsible,
         signature=signature,
         actor=actor,
+        request_id=req.pk,
     )
+    for line in loan.items.all():
+        line.daily_rate = next(
+            item.approved_daily_rate for item in lines if item.asset_id == line.asset_id
+        )
+        line.save(update_fields=["daily_rate"])
+    charge.loan = loan
+    charge.save(update_fields=["loan"])
+    req.holds.all().delete()
     req.loan = loan
     req.status = "ENTREGADA"
     req.resolved_by = actor
-    req.resolved_at = timezone.now()
-    req.resolution_reason = "Entrega firmada registrada"
+    req.resolved_at = now
+    req.resolution_reason = "Entrega firmada con pago previo confirmado"
     req.save()
     return loan

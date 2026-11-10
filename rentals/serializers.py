@@ -33,21 +33,27 @@ class LoanSerializer(serializers.ModelSerializer):
             "issued_at",
             "due_at",
             "closed_at",
+            "billing_mode",
             "items",
         ]
 
 
 class IssueSerializer(serializers.Serializer):
-    contractor_id = serializers.PrimaryKeyRelatedField(
-        queryset=Contractor.objects.all()
-    )
-    site_id = serializers.PrimaryKeyRelatedField(queryset=Site.objects.all())
-    asset_ids = serializers.ListField(
-        child=serializers.IntegerField(min_value=1), min_length=1
-    )
+    request_id = serializers.IntegerField(min_value=1)
     responsible = serializers.CharField(max_length=140)
-    due_at = serializers.DateTimeField()
     signature = serializers.CharField(max_length=350000)
+
+    def to_internal_value(self, data):
+        unknown = set(data) - set(self.fields)
+        if unknown:
+            raise serializers.ValidationError(
+                {
+                    "non_field_errors": [
+                        "La entrega requiere request_id de una solicitud pagada; la tarifa y fechas no se envían nuevamente."
+                    ]
+                }
+            )
+        return super().to_internal_value(data)
 
 
 class ReturnLineSerializer(serializers.Serializer):

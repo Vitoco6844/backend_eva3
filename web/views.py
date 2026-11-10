@@ -27,6 +27,7 @@ from maintenance.services import (
     save_plan,
 )
 from payments.services import visible_charges, start_payment, reconcile_payment
+from payments.billing import billing_summary
 from .forms import (
     IssueForm,
     ReturnForm,
@@ -167,6 +168,10 @@ def master_form(request, kind, pk=None):
             with transaction.atomic():
                 if obj:
                     locked = model.objects.select_for_update().get(pk=pk)
+                    if kind == "assets" and "category" in form.changed_data:
+                        from inventory.services import require_unheld
+
+                        require_unheld(locked)
                     for field in form.changed_data:
                         setattr(locked, field, form.cleaned_data[field])
                     locked.full_clean()
@@ -282,24 +287,12 @@ def loans(request):
 @login_required
 def issue(request):
     require_operator(request.user)
-    form = IssueForm(request.POST or None)
-    if request.method == "POST" and form.is_valid():
-        d = form.cleaned_data
-        try:
-            loan = issue_loan(
-                contractor_id=d["contractor"].pk,
-                site_id=d["site"].pk,
-                asset_ids=list(d["assets"].values_list("pk", flat=True)),
-                due_at=d["due_at"],
-                responsible=d["responsible"],
-                signature=d["signature"],
-                actor=request.user,
-            )
-            messages.success(request, "Entrega registrada y firmada.")
-            return redirect(f"/rentals/{loan.pk}/")
-        except (ValidationError, IntegrityError) as exc:
-            error(form, exc)
-    return form_page(request, form, "Entregar herramientas", "/rentals/", True)
+    if request.method == "POST":
+        messages.error(
+            request,
+            "La entrega directa fue reemplazada por solicitud, aprobación y pago previo.",
+        )
+    return redirect("/solicitudes/nueva/")
 
 
 @login_required
@@ -320,6 +313,7 @@ def loan_detail(request, pk):
             request,
             loan=loan,
             overdue=loan.closed_at is None and loan.due_at < timezone.now(),
+            billing=billing_summary(loan),
         ),
     )
 
@@ -519,7 +513,7 @@ def charge_detail(request, pk):
 @login_required
 def payment_continue(request, pk):
     charge = get_object_or_404(visible_charges(request.user), pk=pk)
-    if request.user.contractor_id != charge.loan.contractor_id:
+    if request.user.contractor_id != charge.contractor_id:
         raise PermissionDenied()
     attempt = get_object_or_404(charge.attempts, status="PENDING")
     response = render(

@@ -36,10 +36,28 @@ def refresh_overdue_alerts(at=None):
 
 
 @transaction.atomic
-def issue_loan(
-    *, contractor_id, site_id, asset_ids, due_at, responsible, signature, actor
+def _issue_approved_loan(
+    *,
+    contractor_id,
+    site_id,
+    asset_ids,
+    due_at,
+    responsible,
+    signature,
+    actor,
+    request_id,
 ):
     require_operator(actor)
+    from .models import RentalRequest, AssetHold
+
+    req = RentalRequest.objects.get(pk=request_id, contractor_id=contractor_id)
+    if (
+        req.status != "PAGADA"
+        or not req.charges.filter(
+            kind="INITIAL", paid_at__isnull=False, voided_at=None
+        ).exists()
+    ):
+        raise ValidationError("La solicitud debe tener su pago confirmado.")
     raw, digest = validate_signature(signature)
     contractor = Contractor.objects.select_for_update().get(pk=contractor_id)
     site = Site.objects.get(pk=site_id)
@@ -71,6 +89,10 @@ def issue_loan(
         ):
             raise ValidationError(
                 f"{asset.code}: no está disponible o requiere revisión."
+            )
+        if not AssetHold.objects.filter(asset=asset, request_id=request_id).exists():
+            raise ValidationError(
+                "La herramienta no está retenida para esta solicitud."
             )
         if LoanItem.objects.filter(asset=asset, returned_at=None).exists():
             raise ValidationError("Herramienta ya prestada.")
@@ -179,3 +201,39 @@ def return_items(*, loan_id, items, signature, actor):
         close_charge(loan)
         OverdueAlert.objects.filter(loan=loan, resolved_at=None).update(resolved_at=now)
     return loan
+
+
+@transaction.atomic
+def issue_loan(
+    *,
+    contractor_id,
+    site_id,
+    asset_ids,
+    due_at,
+    responsible,
+    signature,
+    actor,
+    request_id=None,
+):
+    require_operator(actor)
+    if not request_id:
+        raise ValidationError(
+            "La entrega requiere una solicitud aprobada y pagada. Crea una solicitud en /solicitudes/nueva/."
+        )
+    from .models import RentalRequest
+
+    req = RentalRequest.objects.get(pk=request_id)
+    if req.contractor_id != contractor_id or set(
+        req.items.values_list("asset_id", flat=True)
+    ) != set(asset_ids):
+        raise ValidationError("Los datos no coinciden con la solicitud pagada.")
+    from .request_services import fulfill_request
+
+    return fulfill_request(
+        request_id=request_id,
+        site_id=site_id,
+        due_at=due_at,
+        responsible=responsible,
+        signature=signature,
+        actor=actor,
+    )

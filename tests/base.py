@@ -52,4 +52,47 @@ class DomainCase(TestCase):
             actor=self.operator,
         )
         data.update(kwargs)
-        return issue_loan(**data)
+        from django.db import transaction
+        from unittest.mock import patch
+        import uuid
+        from rentals.approval_services import (
+            create_operator_request,
+            approve_request,
+            approval_quote,
+        )
+        from rentals.models import Loan
+        from payments.models import Charge
+
+        with transaction.atomic():
+            now = timezone.now()
+            with patch(
+                "rentals.request_services.timezone.now",
+                return_value=now - timedelta(minutes=1),
+            ):
+                req = create_operator_request(
+                    contractor_id=data["contractor_id"],
+                    actor=data["actor"],
+                    asset_ids=data["asset_ids"],
+                    site_name="Fixture histórica",
+                    site_address="Dirección",
+                    responsible=data["responsible"],
+                    starts_at=now,
+                    ends_at=data["due_at"],
+                    notes="Fixture de pruebas",
+                    submit_key=uuid.uuid4(),
+                )
+            req = approve_request(
+                request_id=req.pk,
+                site_id=data["site_id"],
+                quote=approval_quote(req, data["actor"]),
+                actor=data["actor"],
+            )
+            # Fixture bancaria en memoria de tests; los tests específicos verifican el proveedor.
+            Charge.objects.filter(rental_request=req).update(paid_at=now)
+            req.status = "PAGADA"
+            req.save()
+            loan = issue_loan(**data, request_id=req.pk)
+            Charge.objects.filter(rental_request=req).delete()
+            Loan.objects.filter(pk=loan.pk).update(billing_mode="LEGACY_POSTPAID")
+            loan.refresh_from_db()
+            return loan

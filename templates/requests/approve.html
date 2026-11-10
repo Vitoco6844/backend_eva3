@@ -1,0 +1,5 @@
+{% extends 'form.html' %}{% load currency %}{% block before_form %}
+<h2>Revisar cotización y retener equipos</h2><p>{{ rental_request.contractor }} · {{ rental_request.site_name }}<br>{{ rental_request.site_address }}</p>
+<p>Desde {{ rental_request.starts_at|date:'d/m/Y H:i' }} hasta {{ rental_request.ends_at|date:'d/m/Y H:i' }}.</p>
+<div class="table-wrap"><table><thead><tr><th>Herramienta</th><th>Tarifa diaria a aprobar</th></tr></thead><tbody>{% for line in lines %}<tr><td>{{ line.asset.name }}</td><td>{{ line.asset.daily_rate|clp }}</td></tr>{% endfor %}</tbody></table></div>
+<p><strong>Pago inicial del período contratado: {{ amount|clp }}</strong></p><p>Al aprobar se retienen estas unidades. El cliente debe pagar antes de entregar. No se registra aún una entrega ni una firma. Si la obra operativa no existe, créala en Obras y vuelve a esta solicitud.</p>{% endblock %}

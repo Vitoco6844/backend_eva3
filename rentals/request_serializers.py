@@ -8,7 +8,13 @@ class RequestItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RentalRequestItem
-        fields = ["id", "asset", "asset_name", "estimated_daily_rate"]
+        fields = [
+            "id",
+            "asset",
+            "asset_name",
+            "estimated_daily_rate",
+            "approved_daily_rate",
+        ]
 
 
 class RentalRequestSerializer(serializers.ModelSerializer):
@@ -27,6 +33,8 @@ class RentalRequestSerializer(serializers.ModelSerializer):
             "ends_at",
             "notes",
             "estimated_amount",
+            "approved_amount",
+            "approved_at",
             "status",
             "created_at",
             "resolution_reason",
@@ -59,10 +67,16 @@ class SubmitRequestSerializer(serializers.Serializer):
 
 
 class FulfillSerializer(serializers.Serializer):
-    site_id = serializers.PrimaryKeyRelatedField(
-        queryset=Site.objects.filter(active=True)
-    )
     responsible = serializers.CharField(max_length=140)
-    due_at = serializers.DateTimeField()
     signature = serializers.CharField(max_length=350000)
-    quote = serializers.CharField()
+
+    def to_internal_value(self, data):
+        unknown = set(data) - set(self.fields)
+        if unknown:
+            raise serializers.ValidationError(
+                {
+                    key: "La entrega utiliza exclusivamente la cotización ya pagada."
+                    for key in unknown
+                }
+            )
+        return super().to_internal_value(data)

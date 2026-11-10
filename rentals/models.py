@@ -3,7 +3,14 @@ from django.db.models import Q
 
 
 class Loan(models.Model):
-    billing_mode = models.CharField(max_length=20, choices=[("LEGACY_POSTPAID", "Histórico: pago al devolver"), ("PREPAID", "Pago previo")], default="PREPAID")
+    billing_mode = models.CharField(
+        max_length=20,
+        choices=[
+            ("LEGACY_POSTPAID", "Histórico: pago al devolver"),
+            ("PREPAID", "Pago previo"),
+        ],
+        default="PREPAID",
+    )
     contractor = models.ForeignKey(
         "inventory.Contractor", on_delete=models.PROTECT, verbose_name="contratista"
     )
@@ -25,6 +32,14 @@ class Loan(models.Model):
                 name="loan_due_after_issue",
             )
         ]
+
+    @property
+    def charge(self):
+        """Compatibilidad de lectura para documentos históricos, nunca liquidación nueva."""
+        charge = self.charges.filter(kind="LEGACY").first()
+        if charge is None:
+            raise AttributeError("El préstamo no tiene cargo histórico.")
+        return charge
 
     def __str__(self):
         return f"Préstamo #{self.pk} · {self.contractor}"

@@ -79,3 +79,13 @@ class RentalRequestItemAdmin(HistoryAdmin):
     search_fields = ("asset__name", "asset__code")
     list_filter = ("asset__category",)
     list_select_related = ("request", "asset")
+
+
+from .models import AssetHold
+
+
+@admin.register(AssetHold)
+class AssetHoldAdmin(HistoryAdmin):
+    list_display = ("asset", "request", "created_at")
+    list_select_related = ("asset", "request")
+    search_fields = ("asset__code", "request__contractor__name")

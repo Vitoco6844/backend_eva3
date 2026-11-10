@@ -106,6 +106,23 @@ class Asset(models.Model):
             ),
         ]
 
+    def clean(self):
+        super().clean()
+        if self.pk:
+            previous = (
+                type(self)
+                .objects.filter(pk=self.pk)
+                .values("category_id", "warehouse_id")
+                .first()
+            )
+            if previous and (
+                self.category_id != previous["category_id"]
+                or self.warehouse_id != previous["warehouse_id"]
+            ):
+                from .services import require_unheld
+
+                require_unheld(self)
+
     def __str__(self):
         return f"{self.code} · {self.name}"
 
