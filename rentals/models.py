@@ -3,6 +3,7 @@ from django.db.models import Q
 
 
 class Loan(models.Model):
+    billing_mode = models.CharField(max_length=20, choices=[("LEGACY_POSTPAID", "Histórico: pago al devolver"), ("PREPAID", "Pago previo")], default="PREPAID")
     contractor = models.ForeignKey(
         "inventory.Contractor", on_delete=models.PROTECT, verbose_name="contratista"
     )
@@ -94,4 +95,4 @@ class OverdueAlert(models.Model):
         ]
 
 
-from .request_models import RentalRequest, RentalRequestItem  # noqa: F401,E402
+from .request_models import RentalRequest, RentalRequestItem, AssetHold  # noqa: F401,E402

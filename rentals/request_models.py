@@ -5,6 +5,8 @@ from django.db.models import Q, F
 class RentalRequest(models.Model):
     class Status(models.TextChoices):
         PENDING = "PENDIENTE", "Pendiente de revisión"
+        APPROVED = "APROBADA", "Aprobada: pendiente de pago"
+        PAID = "PAGADA", "Pagada: pendiente de entrega"
         FULFILLED = "ENTREGADA", "Entregada"
         REJECTED = "RECHAZADA", "Rechazada"
         CANCELLED = "CANCELADA", "Cancelada"
@@ -27,6 +29,10 @@ class RentalRequest(models.Model):
     status = models.CharField(
         "estado", max_length=12, choices=Status, default=Status.PENDING
     )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey("accounts.User", on_delete=models.PROTECT, null=True, blank=True, related_name="+")
+    approved_site = models.ForeignKey("inventory.Site", on_delete=models.PROTECT, null=True, blank=True, related_name="+")
+    approved_amount = models.PositiveBigIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
@@ -62,7 +68,7 @@ class RentalRequest(models.Model):
             ),
             models.CheckConstraint(
                 condition=Q(
-                    status__in=["PENDIENTE", "ENTREGADA", "RECHAZADA", "CANCELADA"]
+                    status__in=["PENDIENTE", "APROBADA", "PAGADA", "ENTREGADA", "RECHAZADA", "CANCELADA"]
                 ),
                 name="request_status_valid",
             ),
@@ -90,6 +96,7 @@ class RentalRequestItem(models.Model):
         "inventory.Asset", on_delete=models.PROTECT, related_name="rental_requests"
     )
     estimated_daily_rate = models.PositiveIntegerField("tarifa diaria estimada")
+    approved_daily_rate = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         ordering = ["pk"]
@@ -103,3 +110,12 @@ class RentalRequestItem(models.Model):
                 name="request_item_rate_positive",
             ),
         ]
+
+
+class AssetHold(models.Model):
+    request = models.ForeignKey(RentalRequest, on_delete=models.PROTECT, related_name="holds")
+    asset = models.OneToOneField("inventory.Asset", on_delete=models.PROTECT, related_name="rental_hold")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "retención de herramienta"
