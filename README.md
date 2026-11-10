@@ -2,6 +2,16 @@
 
 Proyecto académico EVA 3: Django, DRF, PostgreSQL, Django Admin y templates responsivos. Inventario por obra/bodega, entregas y devoluciones firmadas, mantenimiento preventivo por fecha u horas, morosidad y pagos con Webpay Plus **exclusivamente en integración, sin dinero real**.
 
+## Tienda pública y cuentas
+
+La portada `/`, el catálogo `/catalogo/`, las fichas y la selección `/mi-solicitud/` se pueden visitar sin cuenta. Solo se exige registro o ingreso al **enviar la solicitud de arriendo**. El registro crea una cuenta de cliente y un contratista propio; no concede acceso a bodega ni Admin. La selección anónima se conserva al registrarse.
+
+La solicitud queda pendiente y no reserva equipos ni cobra. Bodega revisa `/solicitudes/`, confirma disponibilidad y tarifas y registra la entrega con firma. La estimación usa las fechas solicitadas; el cargo definitivo se calcula al devolver, con la tarifa aceptada y el tiempo real. Los clientes siguen sus solicitudes en `/mis-solicitudes/`; el personal usa `/panel/`.
+
+Se incluyen doce imágenes originales generadas con IA como referencias de herramientas, disponibles localmente. El personal puede cargar una fotografía propia por activo. Las firmas siguen siendo privadas. Las páginas web inexistentes muestran un 404 con «Volver al inicio»; las rutas API inexistentes conservan respuesta JSON.
+
+Para actualizar tu instancia existente después de publicar los cambios en GitHub, sigue [ACTUALIZAR_EC2.md](docs/ACTUALIZAR_EC2.md). La actualización no requiere recrear la base ni el administrador.
+
 ## Abrir en este computador
 
 Abre PowerShell:
@@ -13,7 +23,7 @@ cd "C:\Users\vimat\Desktop\Clases\2do sm\backend_eva3"
 .\scripts\iniciar.ps1
 ```
 
-La creación del administrador es necesaria solo la primera vez. Elige tu propia contraseña. Abre [BuildCorp local](http://127.0.0.1:8013/) y entra con esa cuenta. [Django Admin](http://127.0.0.1:8013/admin/) permite crear usuarios y asignarles roles. No hay usuarios o contraseñas compartidas. Los usuarios QAManager y QAContractor son exclusivos de una base temporal de verificación y no existen en tu base.
+La creación del administrador es necesaria solo la primera vez. Elige tu propia contraseña. Abre [BuildCorp local](http://127.0.0.1:8013/) y entra con esa cuenta. [Django Admin](http://127.0.0.1:8013/admin/) permite crear usuarios internos y asignarles roles. Los clientes pueden registrarse desde la tienda. No hay usuarios o contraseñas compartidas. Los usuarios QAManager y QAContractor son exclusivos de una base temporal de verificación y no existen en tu base.
 
 La base local usa el puerto **55433**, el nombre `buildcorp` y credenciales propias en `.env`; EVA2 conserva su base independiente. Este computador reutiliza los ejecutables PostgreSQL de EVA2 mediante `POSTGRES_BIN` en `.env`. No se comparten datos ni contraseñas. Si se mueve o elimina EVA2, actualiza esa ruta o ejecuta el configurador para instalar PostgreSQL portable propio.
 
@@ -37,7 +47,7 @@ Con base externa: copia `.env.example` a `.env`, elige claves propias, configura
 
 - Administrador: cuentas, contratistas, datos maestros y operaciones. El superusuario inicial accede a todos los modelos de Admin.
 - Bodeguero: inventario, préstamos, devoluciones y mantenimiento. No asigna roles ni administra contratistas.
-- Contratista: consulta y paga únicamente sus propios cargos; su cuenta debe tener asignado el contratista correspondiente en Admin.
+- Cliente/contratista: se registra en la tienda, solicita herramientas y consulta sus propios préstamos y cargos. Las cuentas antiguas creadas desde Admin deben tener asignado el contratista correspondiente.
 
 En Django Admin, asignar el rol no concede automáticamente permisos de administración: el acceso requiere `is_staff` y permisos Django. La interfaz de operaciones utiliza el rol de negocio. Para un bodeguero normal basta una cuenta activa con rol BODEGUERO, sin permisos de Admin.
 

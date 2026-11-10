@@ -5,7 +5,9 @@
 
 ```mermaid
 flowchart LR
- U[Usuario autenticado] --> W[Templates y formularios]
+ V[Visitante] --> C[Portada, catálogo y selección públicos]
+ C --> W[Templates y formularios]
+ U[Usuario autenticado] --> W
  U --> A[API DRF]
  W --> S[Servicios de dominio]
  A --> S
@@ -48,7 +50,7 @@ EC2 prevista: navegador → Nginx 80/443 → Gunicorn 127.0.0.1:8000 → Django 
 | Contratista consulta firma ajena | accounts, rentals, web | test_private_signature |
 
 ## Contrato HTTP
-Sesión de Django y CSRF para escrituras. Listados API paginados (20 registros). Un anónimo recibe redirección al ingreso en web y 403 en API con autenticación de sesión. Usuario sin permiso: 403; objeto de otro contratista: 404; validación: 400; conflicto de integridad: 409. Retorno externo Webpay es la única excepción CSRF de negocio; confirma mediante proveedor.
+Sesión de Django y CSRF para escrituras. Listados API paginados (20 registros). Las vistas públicas permiten visitantes sin sesión. Al enviar una solicitud o acceder a documentos privados, un anónimo recibe redirección al ingreso en web y 403 en API con autenticación de sesión. Usuario sin permiso: 403; objeto de otro contratista: 404; validación: 400; conflicto de integridad: 409. Retorno externo Webpay es la única excepción CSRF de negocio; confirma mediante proveedor.
 
 | Recurso /api/ | Operaciones |
 |---|---|
@@ -60,7 +62,20 @@ Sesión de Django y CSRF para escrituras. Listados API paginados (20 registros).
 | maintenance-plans/ | GET/POST/PUT/PATCH; no borrar planes que forman parte del control preventivo |
 | maintenance-jobs/ | GET/POST; finish/ para cierre con próximos límites |
 | charges/ | GET; pay/ y reconcile/ mediante POST |
+| rental-requests/ | GET/POST privados; cancel/, reject/, delivery-quote/ y fulfill/ según rol |
 
 El administrador gestiona contratistas; bodeguero opera inventario. Contratistas consultan únicamente préstamos/cargos propios. Campos de estado, horas, tarifas históricas, firmas y resultados bancarios no admiten edición arbitraria. Bajas/desactivaciones preservan trazabilidad cuando DELETE resulta incompatible con relaciones.
 
 No hay entrega sustituta durante revisión, facturación tributaria, multas, reembolsos bancarios ni firma electrónica avanzada en este alcance. La firma dibujada es una constancia académica con hash y registro del usuario que la capturó.
+
+## Extensión: tienda y solicitudes
+
+`web/storefront.py` presenta portada, catálogo, fichas y selección pública. `accounts/services.py` registra clientes con contraseña validada, correo único sin distinguir mayúsculas y RUT normalizado con dígito verificador. El rol CONTRATISTA y la entidad propietaria se asignan en servidor; no se toman del formulario. No se vincula una cuenta nueva a un contratista existente solo por conocer su RUT.
+
+`rentals/request_models.py` conserva la solicitud y sus líneas. `request_services.py` aplica titularidad, estados, idempotencia, morosidad y disponibilidad. La selección de sesión admite hasta veinte activos y no bloquea stock. Al enviar, las fechas se calculan como duración real en UTC y se registra una estimación; no se crea Loan ni Charge.
+
+Bodega selecciona la obra operativa, revisa la tarifa actual y firma la entrega completa. Un resumen firmado de tarifas detecta cambios posteriores a mostrar el formulario. La transacción bloquea contratista → solicitud → activos y reutiliza `issue_loan`; solo entonces los activos pasan a uso. La devolución y Webpay siguen los servicios existentes. Una solicitud puede cancelarse por su titular o rechazarse con motivo por el personal mientras está pendiente.
+
+Escenario +1: visitante explora `/catalogo/` → agrega equipo a `/mi-solicitud/` → se registra conservando selección → envía → bodega confirma en `/solicitudes/` → cliente consulta su préstamo → devolución genera cargo. Las pruebas de solicitud y el recorrido con navegador verifican estas conexiones.
+
+Las imágenes públicas se entregan por `/catalogo/herramientas/<id>/imagen/`, validando que el activo siga publicado. Se usa la foto cargada o un PNG local de referencia. No se publica un directorio general de firmas. `handler404` ofrece regreso al inicio y distingue las rutas API para mantener JSON.

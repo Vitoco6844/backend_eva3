@@ -2,6 +2,26 @@
 
 Fechas: 9 y 10 de noviembre de 2026, America/Santiago. Proyecto: backend_eva3. Esta evidencia corresponde a ejecución local; no acredita despliegue público en AWS.
 
+## Ampliación de tienda pública, 10 de noviembre
+
+Suite final posterior a las correcciones: `.venv/Scripts/python.exe manage.py test tests --noinput` → **90 pruebas en 54.861 segundos, OK** (repetición final de entrega; la ejecución anterior también aprobó en 56.866 segundos), con PostgreSQL real y base de pruebas separada. Incluye registro con RUT válido y correo único, rechazo de rol/identidad inyectados, preservación de datos anteriores en migraciones, acceso público al catálogo, imágenes validadas, selección anónima, solicitud sin reserva/cargo, titularidad, envío repetido, confirmación concurrente, tarifas, cancelación/rechazo y 404 web/API. Se conservan las regresiones previas de devolución, mantenimiento, morosidad y Webpay con proveedor simulado.
+
+Se hizo una revisión independiente acotada de lectura de código. El revisor no ejecutó pruebas, navegador ni AWS y no inspeccionó secretos. Terminó y fue detenido. Se reprodujeron y corrigieron la selección bloqueada al desaparecer veinte activos publicados y el parámetro de categoría Unicode que provocaba error 500. La revisión propia añadió una regresión de duración UTC al cambiar horario de verano. Los tres casos quedaron verdes antes de ejecutar la suite completa.
+
+Navegador real (Edge, Playwright CLI), con `DEBUG=False`, servidor temporal y base `test_buildcorp_ui`: visitante abre portada/ficha y agrega Taladro percutor sin sesión → se registra y conserva la selección → solicita dos días a $6.000/día → estimación $12.000. Consulta directa de QA confirmó estado PENDIENTE, cero Loan, cero Charge y activo DISPONIBLE. Operador confirma con obra y firma dibujada → devolución con 2.50 horas y nueva firma → cliente consulta solicitud entregada, préstamo cerrado, constancias y cargo de $6.000 por el mínimo de un día real. No se inició otro pago bancario en este recorrido; se mantiene separada la evidencia anterior de integración real y las regresiones automatizadas.
+
+Portada de escritorio a 1440×1000: ancho de página 1440. Portada, catálogo, registro, selección vacía y 404 a 390×844: ancho de página 390 en todas, sin desbordamiento horizontal. Se recorrieron y decodificaron todas las imágenes antes de capturar: 7/7 en portada y 12/12 en catálogo. La ruta ficticia respondió 404, el enlace «Volver al inicio» apunta a `/` y devolvió efectivamente a la portada. Se inspeccionaron capturas de escritorio, catálogo móvil y 404 móvil. La consola registró un 400 esperado al editar transitoriamente fechas inválidas y un 404 solicitado expresamente; no se observó una excepción JavaScript.
+
+Capturas locales de esta ampliación: `output/playwright/storefront-home-desktop.png`, `storefront-home-mobile.png`, `storefront-catalog-mobile.png`, `storefront-register-mobile.png`, `storefront-selection-mobile.png`, `storefront-404-mobile.png` y `storefront-selection.png`. Están excluidas de Git, igual que sesiones y credenciales temporales.
+
+Comprobaciones finales de la ampliación: `check` sin errores; `makemigrations --check --dry-run` sin cambios; `migrate --check` sin pendientes; `collectstatic` correcto (181 archivos fuente, 444 procesados); `pip check` sin incompatibilidades; `ruff format --check .` con 122 archivos formateados; `git diff --check` limpio. Se cerró el navegador QA y se verificó que su base temporal, contraseña y sesiones de esta ejecución fueron retiradas.
+
+Las imágenes generadas y las fotografías subidas se distinguen de las firmas privadas. La ampliación no fue desplegada en EC2 desde este trabajo; ACTUALIZAR_EC2.md describe los pasos que realizará el usuario.
+
+## Evidencia de la versión inicial
+
+Los resultados siguientes corresponden a la versión previa de 52 pruebas y se conservan como antecedentes, incluidos sus recorridos de integración. No se atribuyen como nuevos ensayos de la ampliación.
+
 ## Automatizada
 Comando: `.venv/Scripts/python.exe manage.py test tests --noinput`.
 

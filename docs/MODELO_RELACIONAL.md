@@ -4,6 +4,11 @@
 erDiagram
  CONTRACTOR ||--o{ USER : identifica
  CONTRACTOR ||--o{ LOAN : recibe
+ CONTRACTOR ||--o{ RENTAL_REQUEST : solicita
+ USER ||--o{ RENTAL_REQUEST : presenta
+ RENTAL_REQUEST ||--|{ REQUEST_ITEM : contiene
+ ASSET ||--o{ REQUEST_ITEM : solicitado
+ RENTAL_REQUEST |o--o| LOAN : concreta
  SITE ||--o{ WAREHOUSE : contiene
  SITE ||--o{ LOAN : destino
  WAREHOUSE ||--o{ ASSET : almacena
@@ -29,3 +34,13 @@ Restricciones PostgreSQL: un préstamo abierto por herramienta (índice único p
 Estado de préstamo cerrado: closed_at informado tras devolución completa. Morosidad se calcula a partir de vencimiento y pendientes; no depende de una bandera que cron pudiera olvidar. Bloqueo manual de contratista es independiente. Los borrados de maestros usados se rechazan y se conserva la baja lógica.
 
 Firmas se almacenan como bytes PNG privados, con SHA-256, nombre del responsable, tipo, momento y actor. El endpoint de imagen verifica titularidad. No se guardan tarjetas, CVV ni claves del banco. El token de intento Webpay se guarda privado y no se incluye en serializers o Admin.
+
+## Identidad y solicitud pública
+
+El correo no vacío de User es único por `Lower(email)`. La identidad de Contractor es única después de quitar espacios, puntos y guion y convertir a mayúsculas. Las migraciones primero detectan duplicados y se detienen con sus identificadores; no eliminan usuarios ni fusionan empresas automáticamente. El registro valida el dígito verificador del RUT y crea una identidad propia.
+
+RentalRequest guarda solicitante, contratista, obra/dirección declaradas, responsable, período previsto, notas, estimación, clave UUID de envío, huella de contenido y resolución. RequestItem conserva activo y tarifa diaria estimada; no admite dos líneas para el mismo activo/solicitud. Loan es opcional y único por solicitud entregada. La obra declarada no permite al cliente editar los Site internos.
+
+La clave de envío y su huella permiten devolver la misma solicitud ante un doble envío idéntico y rechazar su reutilización con contenido distinto. Los estados pendientes/entregados/rechazados/cancelados preservan la trazabilidad. La tarifa estimada de RequestItem no reemplaza la tarifa histórica aceptada de LoanItem.
+
+Asset incorpora una imagen opcional. Se valida JPEG/PNG/WebP, contenido, dimensiones máximas 4096×4096 y hasta 512 KiB para cargas del usuario. Los PNG de referencia incluidos en estáticos no son cargas del formulario y conservan sus archivos originales.

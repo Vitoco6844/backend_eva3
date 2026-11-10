@@ -1,7 +1,15 @@
 # Guion de defensa BuildCorp
 
 ## Antes de presentar
-Inicia PostgreSQL y Django con scripts/iniciar.ps1. Crea tu administrador y dos cuentas desde Admin: un bodeguero y un contratista asociado a una entidad Contractor. El catálogo seed_demo no crea cuentas. Comprueba que PUBLIC_BASE_URL corresponde al host/puerto que usarás. Para presentar en AWS sigue DESPLIEGUE_EC2.md y prueba con su dirección pública.
+Inicia PostgreSQL y Django con scripts/iniciar.ps1. Utiliza tu administrador existente (créalo solo si aún no existe), crea un bodeguero desde Admin y registra un cliente desde la tienda. El catálogo seed_demo no crea cuentas. Comprueba que PUBLIC_BASE_URL corresponde al host/puerto que usarás. Para presentar en AWS sigue DESPLIEGUE_EC2.md y prueba con su dirección pública.
+
+## Demostración de la tienda pública
+
+Abre `/` en una ventana sin sesión: recorre catálogo, filtro y ficha y agrega una herramienta a la selección. Muestra que no pide cuenta para explorar. Regístrate al solicitar, indica obra y fechas y presenta la estimación. En la cuenta del cliente aparece la solicitud pendiente, sin reserva ni cobro.
+
+Entra como bodeguero o administrador, abre `/solicitudes/`, comprueba la disponibilidad, selecciona la obra operativa y confirma tarifas y entrega con firma. Vuelve como cliente y muestra el préstamo asociado. Devuelve desde bodega y explica por qué el cargo final puede diferir de la estimación: se cobra el tiempo real desde entrega hasta devolución, por cada herramienta. Muestra también una URL inexistente y el botón «Volver al inicio».
+
+Las doce imágenes son referencias generadas con IA y se incluyen en el repositorio. Pueden reemplazarse por una fotografía del activo; no representan una marca o modelo certificado.
 
 ## Recorrido sugerido
 1. Explica el problema: pérdida de herramientas, poca trazabilidad y fallas imprevistas.
@@ -25,7 +33,7 @@ Inicia PostgreSQL y Django con scripts/iniciar.ps1. Crea tu administrador y dos 
 - ¿Cómo se confirma Webpay? El servidor consulta/confirmar con Transbank y valida monto, orden, sesión y respuesta. No acepta como prueba el mensaje del navegador.
 - ¿Qué sucede con un timeout de pago? Se conserva Por conciliar, evitando nuevos intentos hasta conocer el resultado.
 - ¿Se cobró dinero real? No: solo integración, endpoint fijado y tarjetas ficticias oficiales.
-- ¿Qué falta para la rúbrica de despliegue? Ejecutar la guía en tu AWS Academy y demostrar la aplicación por IP/DNS público; no se ha desplegado desde este trabajo.
+- ¿Qué falta para la rúbrica de despliegue? Actualizar y comprobar la nueva versión en tu EC2 siguiendo ACTUALIZAR_EC2.md y demostrarla por IP/DNS público. Esta ampliación se verificó localmente; el usuario opera su instancia.
 
 ## Mapa de evaluación
 | Criterio | Dónde mostrarlo |
@@ -37,3 +45,5 @@ Inicia PostgreSQL y Django con scripts/iniciar.ps1. Crea tu administrador y dos 
 | EC2 y defensa | aplicación pública después de ejecutar DESPLIEGUE_EC2.md |
 
 Lee los servicios de dominio antes de la defensa y ejecuta los flujos tú mismo. El reemplazo temporal de herramientas durante revisiones está diferido y no se presenta como implementado.
+
+Preguntas de la ampliación: ¿se necesita cuenta para mirar? No; solo para enviar una solicitud y consultar documentos privados. ¿La solicitud garantiza stock? No; se revalida al entregar. ¿Puede registrarse como administrador? No; el servidor fija el rol de cliente. ¿Se paga al solicitar? No; Webpay se habilita para el cargo creado tras la devolución completa.
