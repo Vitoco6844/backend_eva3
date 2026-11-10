@@ -6,7 +6,11 @@ Proyecto académico EVA 3: Django, DRF, PostgreSQL, Django Admin y templates res
 
 La portada `/`, el catálogo `/catalogo/`, las fichas y la selección `/mi-solicitud/` se pueden visitar sin cuenta. Solo se exige registro o ingreso al **enviar la solicitud de arriendo**. El registro crea una cuenta de cliente y un contratista propio; no concede acceso a bodega ni Admin. La selección anónima se conserva al registrarse.
 
-La solicitud queda pendiente y no reserva equipos ni cobra. Bodega revisa `/solicitudes/`, confirma disponibilidad y tarifas y registra la entrega con firma. La estimación usa las fechas solicitadas; el cargo definitivo se calcula al devolver, con la tarifa aceptada y el tiempo real. Los clientes siguen sus solicitudes en `/mis-solicitudes/`; el personal usa `/panel/`.
+La solicitud inicial queda pendiente y no reserva ni cobra. Bodega revisa `/solicitudes/`, aprueba disponibilidad, obra y tarifas y retiene las unidades. El cliente paga el período contratado mediante Webpay de integración. **Solo después del pago confirmado se permite entregar con firma**, dentro de las fechas aprobadas. Los clientes siguen sus solicitudes en `/mis-solicitudes/`; el personal usa `/panel/` y puede preparar una solicitud en `/solicitudes/nueva/`.
+
+Al devolver solo se genera un saldo si alguna herramienta supera el vencimiento acordado: tarifa aprobada por cada tramo adicional de 24 horas, redondeado hacia arriba. La devolución anticipada conserva el importe contratado y no genera reembolso automático. Las cancelaciones posteriores al pago requieren contactar a BuildCorp. Antes del pago se puede cancelar si no hay intentos bancarios activos o por conciliar.
+
+Los préstamos creados **antes de esta actualización** conservan el cobro histórico al devolver (LEGACY_POSTPAID). Los nuevos usan PREPAID. No se exige pagar retroactivamente un préstamo ya entregado ni se modifica un pago existente.
 
 Se incluyen doce imágenes originales generadas con IA como referencias de herramientas, disponibles localmente. El personal puede cargar una fotografía propia por activo. Las firmas siguen siendo privadas. Las páginas web inexistentes muestran un 404 con «Volver al inicio»; las rutas API inexistentes conservan respuesta JSON.
 
@@ -52,11 +56,11 @@ Con base externa: copia `.env.example` a `.env`, elige claves propias, configura
 En Django Admin, asignar el rol no concede automáticamente permisos de administración: el acceso requiere `is_staff` y permisos Django. La interfaz de operaciones utiliza el rol de negocio. Para un bodeguero normal basta una cuenta activa con rol BODEGUERO, sin permisos de Admin.
 
 1. Revisa o crea obras, bodegas, categorías, contratistas y herramientas. Los datos iniciales son ficticios.
-2. En **Préstamos → Entregar herramientas**, selecciona herramientas disponibles, responsable, vencimiento y firma.
+2. Desde la tienda envía una solicitud, o como operador usa **Solicitudes recibidas → Preparar solicitud**. Aprueba la cotización y obra; las unidades quedan retenidas. El titular paga desde su cuenta. Una vez confirmado el pago, bodega registra la entrega con firma. La antigua entrega directa conduce a este flujo.
 3. En el detalle registra devolución parcial o total, horas utilizadas, daños y firma. Las horas son las de ese préstamo, no el total del contador.
 4. Si corresponde revisión o daño, el activo pasa a Mantenimiento. Inicia el trabajo y finalízalo indicando trabajo realizado y próxima revisión por fecha y/o horas acumuladas.
-5. La devolución completa genera un cargo con las tarifas aceptadas al entregar. Cada herramienta se cobra por períodos de 24 horas redondeados hacia arriba, mínimo un día, hasta su propia devolución. No se agregan multas ni impuestos en este alcance académico.
-6. Entra como contratista y paga el cargo con Webpay de prueba. Un pago no reemplaza una devolución de herramientas.
+5. La devolución completa liquida solo el tiempo adicional: cada herramienta cuenta su retraso respecto al vencimiento acordado. Si todas regresan a tiempo no hay segundo cargo. Los préstamos históricos mantienen el cálculo previo por tiempo real desde entrega. No se añaden multas por daño ni impuestos en este alcance académico.
+6. Entra como titular para pagar el período contratado antes de recibir y cualquier saldo de retraso al devolver. Un pago no reemplaza una devolución de herramientas. Solo se utilizan tarjetas de prueba.
 
 Las revisiones se programan con una fecha límite o umbral de horas. Los límites se renuevan al cerrar cada mantenimiento. El intercambio temporal de herramientas queda como mejora posterior.
 

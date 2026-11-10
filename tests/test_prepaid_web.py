@@ -61,3 +61,19 @@ class PrepaidWeb(DomainCase):
         self.assertEqual(
             self.client.get(f"/payments/{req.charges.get().pk}/").status_code, 404
         )
+
+    def test_operator_initial_dates_are_local_not_utc(self):
+        from datetime import datetime, timedelta, timezone as dt_timezone
+        from unittest.mock import patch
+        from django.utils import timezone
+
+        fixed = datetime(2026, 11, 10, 15, 0, tzinfo=dt_timezone.utc)
+        self.client.force_login(self.operator)
+        with patch("django.utils.timezone.now", return_value=fixed):
+            response = self.client.get("/solicitudes/nueva/")
+        self.assertEqual(
+            response.context["form"].initial["starts_at"],
+            (timezone.localtime(fixed) + timedelta(minutes=2)).strftime(
+                "%Y-%m-%dT%H:%M"
+            ),
+        )

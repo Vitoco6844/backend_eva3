@@ -21,7 +21,10 @@ erDiagram
  LOAN ||--o{ OVERDUE_ALERT : dispara
  ASSET ||--o| MAINTENANCE_PLAN : programa
  ASSET ||--o{ MAINTENANCE_JOB : revisa
- LOAN ||--o| CHARGE : genera
+ LOAN |o--o{ CHARGE : agrupa
+ RENTAL_REQUEST |o--o{ CHARGE : periodo_inicial
+ RENTAL_REQUEST ||--o{ ASSET_HOLD : retiene
+ ASSET ||--o| ASSET_HOLD : retenido
  CHARGE ||--o{ PAYMENT_ATTEMPT : paga
 ```
 
@@ -44,3 +47,11 @@ RentalRequest guarda solicitante, contratista, obra/dirección declaradas, respo
 La clave de envío y su huella permiten devolver la misma solicitud ante un doble envío idéntico y rechazar su reutilización con contenido distinto. Los estados pendientes/entregados/rechazados/cancelados preservan la trazabilidad. La tarifa estimada de RequestItem no reemplaza la tarifa histórica aceptada de LoanItem.
 
 Asset incorpora una imagen opcional. Se valida JPEG/PNG/WebP, contenido, dimensiones máximas 4096×4096 y hasta 512 KiB para cargas del usuario. Los PNG de referencia incluidos en estáticos no son cargas del formulario y conservan sus archivos originales.
+
+## Revisión de prepago y compatibilidad
+
+Charge.loan pasa a FK opcional con colección Loan.charges. Charge.kind distingue LEGACY (histórico), INITIAL (período contratado ligado a RentalRequest) y EXTRA (retraso de Loan). Las restricciones exigen origen válido y un único cargo de cada propósito por su origen. voided_at impide pagar un cargo cancelado; un cargo pagado no puede quedar anulado. Un cargo inicial se enlaza al préstamo cuando se entrega, conservando su pago e ID.
+
+RentalRequest añade APROBADA/PAGADA y guarda approved_at/by/site/amount; sus líneas conservan estimated_daily_rate y approved_daily_rate separadas. AssetHold tiene Asset único y una solicitud propietaria; se consume al entregar o libera al resolver sin pago ni intentos inciertos. La retención se audita por eventos y no sustituye los cuatro estados físicos del catálogo.
+
+Loan.billing_mode distingue PREPAID y LEGACY_POSTPAID. La migración asigna legacy a las filas anteriores y deja prepaid como valor por defecto de nuevas filas; no altera contraseñas, pagos o documentos firmados. Los préstamos históricos conservan el cálculo anterior aunque sigan abiertos durante la actualización.

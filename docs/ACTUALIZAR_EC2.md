@@ -2,6 +2,12 @@
 
 Esta guía corresponde a una instancia ya configurada, con el servicio `buildcorp`, PostgreSQL y Nginx. El usuario ejecuta los comandos; esta ampliación no ha sido desplegada desde el asistente. Publica primero tus cambios locales en GitHub. No recrees la base ni el administrador y no reemplaces `.env` por `.env.example`.
 
+## Cambio incluido: pago antes de nuevas entregas
+
+Esta actualización añade `payments.0002_prepaid_approval` y `rentals.0003_prepaid_approval`. Los préstamos que ya existen quedan como LEGACY_POSTPAID y conservan sus cobros originales; los nuevos usan PREPAID. Las solicitudes pendientes existentes deben aprobarse y pagarse antes de una nueva entrega. No se modifican los pagos ya aprobados ni se pide un pago retroactivo por herramientas entregadas anteriormente.
+
+**Ejecuta las etapas en orden y con el servicio detenido durante pull/migrate.** Cambia el contrato de cargos y de entrega: no es una actualización para mezclar procesos antiguos y nuevos mientras migran. Mantén pausada la entrada cron de BuildCorp desde el respaldo hasta reiniciar y comprobar la versión. Los respaldos permiten recuperar una versión coherente; no se deben revertir migraciones a ciegas.
+
 ## 1. Encender y revisar la dirección
 
 Enciende tu instancia y consulta su IPv4 pública actual: puede cambiar después de detenerla. Desde PowerShell, reemplaza `IP_ACTUAL`:
@@ -65,7 +71,7 @@ git pull --ff-only
 .venv/bin/python manage.py collectstatic --noinput
 ```
 
-Las migraciones añaden solicitudes e imágenes y protegen identidad por RUT/correo. No eliminan préstamos ni usuarios. Si detectan correos o RUT duplicados, se detendrán mostrando los identificadores afectados: revisa esos registros con sus responsables, corrige la identidad y repite migrate. No borres la base, no uses `--fake` y no fusiones clientes automáticamente.
+Las migraciones conservan el catálogo y añaden aprobación, retenciones y cargos INITIAL/EXTRA, con identificación de los préstamos antiguos. Las anteriores de identidad por RUT/correo y de imágenes permanecen en el historial. No eliminan préstamos ni usuarios. Si detectan correos o RUT duplicados, se detendrán mostrando los identificadores afectados: revisa esos registros con sus responsables, corrige la identidad y repite migrate. No borres la base, no uses `--fake` y no fusiones clientes automáticamente.
 
 No ejecutes `seed_demo`, `createsuperuser` ni pruebas sobre la base de la instancia para esta actualización. El catálogo existente y el administrador se conservan. Las doce imágenes de referencia vienen con el código; si algún activo tiene una fotografía propia, se mantiene en `media/`.
 
@@ -80,7 +86,7 @@ curl -I http://127.0.0.1:8000/
 curl -I http://127.0.0.1:8000/accounts/login/
 ```
 
-Abre `http://IP_ACTUAL/` sin sesión: debe aparecer la tienda, no un ingreso obligatorio. Revisa catálogo, ficha e imágenes; agrega un equipo y comprueba que recién al enviar pide cuenta. Registra un cliente de demostración, envía una solicitud y confírmala desde bodega. Verifica devolución, cargo y permisos con datos de prueba. Una ruta inexistente debe mostrar «Volver al inicio» y conservar HTTP 404.
+Abre `http://IP_ACTUAL/` sin sesión: debe aparecer la tienda, no un ingreso obligatorio. Revisa catálogo, ficha e imágenes; agrega un equipo y comprueba que recién al enviar pide cuenta. Registra un cliente de demostración y envía una solicitud. Desde bodega aprueba la cotización: las unidades deben quedar retenidas y aún no debe permitir entregar. Como cliente paga el período contratado con Webpay de integración; con el pago confirmado, vuelve a bodega y entrega con firma. Devuelve a tiempo y comprueba que no aparece otro cargo; el retraso genera únicamente su saldo. Comprueba también que un préstamo antiguo sigue accesible, con sus importes y pagos conservados. Una ruta inexistente debe mostrar «Volver al inicio» y conservar HTTP 404.
 
 Restablece la entrada cron que pausaste. El personal accede al panel en `/panel/`; Admin permanece en `/admin/`. Webpay continúa exclusivamente en integración.
 
@@ -93,3 +99,12 @@ sudo systemctl status postgresql nginx buildcorp --no-pager
 ```
 
 Si el pull falló antes de modificar código/esquema, puedes arrancar el servicio anterior con `sudo systemctl start buildcorp`. Si ya cambió el esquema, identifica el error y completa la migración antes de abrir el servicio. No restaures encima de la base activa ni reviertas migraciones ciegamente: conserva respaldo, commit y logs y prepara una recuperación coherente en una base distinta si fuera necesaria.
+
+## Comprobación específica después de esta actualización
+
+```bash
+.venv/bin/python manage.py showmigrations rentals payments
+.venv/bin/python manage.py shell -c 'from rentals.models import Loan; from payments.models import Charge; print("Historicos:", Loan.objects.filter(billing_mode="LEGACY_POSTPAID").count()); print("Prepago:", Loan.objects.filter(billing_mode="PREPAID").count()); print("Cargos:", Charge.objects.count())'
+```
+
+Las migraciones indicadas deben tener `[X]`. Compara los documentos anteriores con lo anotado antes de actualizar: las cantidades de préstamos, usuarios y cargos no deben desaparecer. La nueva colección de cargos distingue período contratado y saldo extra; no requiere recrear la base ni el administrador. Si una herramienta retenida necesita mantenimiento o el cliente queda bloqueado, la entrega seguirá impedida aunque haya pago: revisa el caso con BuildCorp. La interfaz no ofrece reembolso ni cancelación automática de un arriendo pagado.

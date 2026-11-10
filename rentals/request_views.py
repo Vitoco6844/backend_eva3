@@ -195,7 +195,7 @@ def prepare(request):
     from .approval_services import create_operator_request
 
     require_operator(request.user)
-    now = timezone.now() + timedelta(minutes=2)
+    now = timezone.localtime(timezone.now()) + timedelta(minutes=2)
     form = OperatorRequestForm(
         request.POST or None,
         initial={

@@ -1,7 +1,7 @@
 # Pago previo a la entrega de herramientas
 
 ## Estado y propósito
-Diseño aprobado por el usuario en esta conversación; plan de implementación preparado para revisión. El usuario aprobó el flujo conceptual: solicitud → confirmación de bodega → pago Webpay confirmado → entrega firmada → saldo por tiempo adicional. Esta especificación concreta las decisiones necesarias para cambiar la aplicación existente, que ya está desplegada por el usuario en EC2. No se ha modificado código productivo ni se ha operado AWS.
+Diseño y plan aprobados por el usuario; implementación y verificación local completadas. El usuario aprobó el flujo conceptual: solicitud → confirmación de bodega → pago Webpay confirmado → entrega firmada → saldo por tiempo adicional. Esta especificación concreta las decisiones necesarias para cambiar la aplicación existente, que ya está desplegada por el usuario en EC2. Se implementó el código localmente; no se ha operado AWS.
 
 Es un cambio arquitectónico dentro del monolito existente: Charge actualmente exige un Loan ya entregado y solo se crea al cerrar. Hay que admitir cargos antes del préstamo, retener equipos y proteger todos los caminos de entrega. No es un cambio de ubicación de un botón.
 
@@ -76,4 +76,4 @@ Antes de actualizar se detiene BuildCorp y su tarea periódica, se respalda Post
 
 El diseño conserva acceso público y añade pago previo real validado en servidor, sin pagos simulados manualmente. Se distingue solicitud sin reserva de aprobación con retención y pago inicial de saldo extra. Se explicita el tratamiento de cancelaciones y devoluciones anticipadas, y se protege el stock entre aprobación y entrega. El historial existente usa reglas anteriores para no cobrar retroactivamente. AWS/GitHub siguen bajo operación del usuario. No se requiere generar nuevas imágenes ni añadir un framework de frontend.
 
-Tras la aprobación de esta especificación se preparará el plan de implementación para ejecución en este mismo chat, sin abrir trabajadores adicionales para implementar.
+El plan fue confirmado y se ejecutó en este mismo chat; no se abrieron trabajadores de implementación. La única revisión independiente fue acotada, terminó y su hallazgo importante se verificó mediante regresión.

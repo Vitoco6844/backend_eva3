@@ -79,3 +79,13 @@ Bodega selecciona la obra operativa, revisa la tarifa actual y firma la entrega 
 Escenario +1: visitante explora `/catalogo/` → agrega equipo a `/mi-solicitud/` → se registra conservando selección → envía → bodega confirma en `/solicitudes/` → cliente consulta su préstamo → devolución genera cargo. Las pruebas de solicitud y el recorrido con navegador verifican estas conexiones.
 
 Las imágenes públicas se entregan por `/catalogo/herramientas/<id>/imagen/`, validando que el activo siga publicado. Se usa la foto cargada o un PNG local de referencia. No se publica un directorio general de firmas. `handler404` ofrece regreso al inicio y distingue las rutas API para mantener JSON.
+
+## Revisión de pago previo (sustituye el flujo de cobro de la tienda anterior)
+
+Las descripciones anteriores de cobro al devolver se conservan como contexto del préstamo histórico. El flujo vigente para nuevas entregas es: solicitud sin reserva → aprobación y retención → pago inicial verificado → entrega firmada → liquidación del tiempo adicional.
+
+`rentals/approval_services.py` fija la cotización, retiene unidades físicas mediante AssetHold y coordina cancelaciones. `payments/services.py` permite pagar un Charge INITIAL ligado a RentalRequest antes de existir Loan. Los bloqueos siguen Contractor → Request → Charge → Attempt; los activos se bloquean en orden de ID al aprobar/entregar/liberar. Las llamadas bancarias permanecen fuera de la transacción. Solo un resultado autorizado con identidad y monto válidos cambia la solicitud a PAGADA.
+
+La entrega compartida comprueba pago, retenciones, período aprobado, mantenimiento, morosidad y firma. Ni administrador ni API pueden habilitar una entrega mediante un campo paid_at. El antiguo POST /api/loans/ exige ahora request_id, responsible y signature; rechaza el payload antiguo. GET /rentals/new/ conduce al formulario de preparación. Aprobar usa POST /api/rental-requests/{id}/approve/ con site_id y quote de GET approval-quote/. El resumen delivery-quote/ anterior se sustituye por approval-quote/. Las nuevas rutas web son /solicitudes/nueva/ y /solicitudes/{id}/aprobar/.
+
+`payments/billing.py` conserva el cargo completo de LEGACY_POSTPAID y para PREPAID genera solo EXTRA por retraso de cada línea, al cerrar. Un saldo cero no crea cargo ni transacción bancaria. La retención no vence automáticamente: una solicitud sin pago puede cancelarse/rechazarse si no tiene un intento activo/incierto; una pagada requiere revisión y no finge un reintegro. Cambios de mantenimiento o bloqueo sobrevenidos impiden entregar aunque el pago exista.
