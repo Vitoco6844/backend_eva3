@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block content %}<div class="page-heading"><div><p class="subtitle">Entregas y devoluciones</p><h1>Préstamos</h1></div>{% if operator %}<a class="button" href="/rentals/new/">Entregar herramientas</a>{% endif %}</div><section class="panel">{% include 'rentals/table.html' with rows=page %}</section>{% include 'pagination.html' %}{% endblock %}

@@ -1,0 +1,7 @@
+Django==5.2.17
+djangorestframework==3.16.1
+django-environ==0.13.0
+psycopg[binary]==3.3.6
+whitenoise==6.12.0
+pillow==12.3.0
+gunicorn==23.0.0; platform_system != "Windows"

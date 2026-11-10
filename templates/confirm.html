@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block content %}<h1>{{ title }}</h1><section class="panel"><p>¿Eliminar {{ obj }}? Solo se permite si no tiene registros relacionados.</p><form method="post">{% csrf_token %}<div class="actions"><button class="button danger">Eliminar registro</button><a class="button secondary" href="{{ back }}">Volver</a></div></form></section>{% endblock %}

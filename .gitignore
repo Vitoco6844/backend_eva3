@@ -1,0 +1,12 @@
+.venv/
+.env
+.local/
+.runtime/
+staticfiles/
+__pycache__/
+*.pyc
+.superpowers/
+media/
+.playwright-cli/
+output/playwright/
+.ruff_cache/
