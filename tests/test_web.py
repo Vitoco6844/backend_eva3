@@ -4,10 +4,11 @@ from tests.base import DomainCase
 
 class WebTests(DomainCase):
     def test_dashboard_by_role(self):
-        self.assertEqual(self.client.get("/").status_code, 302)
+        self.assertEqual(self.client.get("/").status_code, 200)
+        self.assertEqual(self.client.get("/panel/").status_code, 302)
         self.client.force_login(self.operator)
         for path in [
-            "/",
+            "/panel/",
             "/inventory/assets/",
             "/inventory/contractors/",
             "/rentals/",

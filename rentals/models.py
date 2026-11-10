@@ -92,3 +92,6 @@ class OverdueAlert(models.Model):
                 name="one_open_alert",
             )
         ]
+
+
+from .request_models import RentalRequest, RentalRequestItem  # noqa: F401,E402

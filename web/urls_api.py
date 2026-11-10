@@ -11,7 +11,10 @@ from rentals.views import LoanViewSet
 from maintenance.views import PlanViewSet, JobViewSet
 from payments.views import ChargeViewSet
 
+from rentals.request_api import RentalRequestViewSet
+
 router = DefaultRouter()
+router.register("rental-requests", RentalRequestViewSet, basename="rental-requests")
 for name, view in [
     ("contractors", ContractorViewSet),
     ("sites", SiteViewSet),

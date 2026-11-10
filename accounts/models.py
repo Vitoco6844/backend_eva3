@@ -27,6 +27,11 @@ class User(AbstractUser):
 
     class Meta:
         constraints = [
+            models.UniqueConstraint(
+                Lower("email"),
+                condition=~models.Q(email=""),
+                name="customer_email_ci_unique",
+            ),
             models.UniqueConstraint(Lower("username"), name="username_ci"),
             models.CheckConstraint(
                 condition=models.Q(role__in=["ADMIN", "BODEGUERO", "CONTRATISTA"]),

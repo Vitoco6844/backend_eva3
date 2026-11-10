@@ -1,5 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator
+from accounts.identity import tax_id_expression
+from .validators import validate_tool_image
 
 
 class Named(models.Model):
@@ -23,6 +25,11 @@ class Contractor(Named):
     class Meta(Named.Meta):
         verbose_name = "contratista"
         verbose_name_plural = "contratistas"
+        constraints = [
+            models.UniqueConstraint(
+                tax_id_expression(), name="contractor_tax_id_normalized_unique"
+            )
+        ]
 
 
 class Site(Named):
@@ -53,6 +60,12 @@ class Asset(models.Model):
 
     code = models.CharField("código", max_length=40, unique=True)
     name = models.CharField("herramienta", max_length=140)
+    image = models.ImageField(
+        "fotografía",
+        upload_to="tools/%Y/%m/",
+        blank=True,
+        validators=[validate_tool_image],
+    )
     serial = models.CharField("número de serie", max_length=100, blank=True)
     category = models.ForeignKey(
         Category, on_delete=models.PROTECT, verbose_name="categoría"

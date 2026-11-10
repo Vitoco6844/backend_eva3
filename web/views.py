@@ -45,6 +45,7 @@ MASTERS = {
             "code",
             "name",
             "serial",
+            "image",
             "category",
             "warehouse",
             "description",
@@ -160,7 +161,7 @@ def master_form(request, kind, pk=None):
             f for f in fields if not (obj and kind == "assets" and f == "warehouse")
         ],
     )
-    form = Form(request.POST or None, instance=obj)
+    form = Form(request.POST or None, request.FILES or None, instance=obj)
     if request.method == "POST" and form.is_valid():
         try:
             with transaction.atomic():

@@ -52,3 +52,30 @@ class AlertAdmin(HistoryAdmin):
     search_fields = ("loan__contractor__name",)
     list_filter = ("detected_at", "resolved_at")
     list_select_related = ("loan",)
+
+
+from .models import RentalRequest, RentalRequestItem
+
+
+@admin.register(RentalRequest)
+class RentalRequestAdmin(HistoryAdmin):
+    list_display = (
+        "id",
+        "contractor",
+        "site_name",
+        "starts_at",
+        "ends_at",
+        "status",
+        "created_at",
+    )
+    search_fields = ("contractor__name", "site_name", "responsible")
+    list_filter = ("status", "starts_at", "created_at")
+    list_select_related = ("contractor",)
+
+
+@admin.register(RentalRequestItem)
+class RentalRequestItemAdmin(HistoryAdmin):
+    list_display = ("request", "asset", "estimated_daily_rate")
+    search_fields = ("asset__name", "asset__code")
+    list_filter = ("asset__category",)
+    list_select_related = ("request", "asset")

@@ -16,6 +16,8 @@ if "--stop" in sys.argv:
     urllib.request.urlopen(request, timeout=10).close()
     raise SystemExit()
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "buildcorp.settings")
+os.environ["DJANGO_DEBUG"] = "False"
+os.environ["PUBLIC_BASE_URL"] = f"http://127.0.0.1:{PORT}"
 import django
 
 django.setup()
