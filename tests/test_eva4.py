@@ -32,6 +32,15 @@ class Eva4IntegrationTests(DomainCase):
         self.api.credentials(HTTP_AUTHORIZATION="Bearer " + response.data["access"])
         return response.data
 
+    def test_overview_reports_inventory_and_open_loans_for_staff(self):
+        self.assertEqual(self.api.get("/api/overview/").status_code, 401)
+        self.login()
+        response = self.api.get("/api/overview/")
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data["available"], 1)
+        self.assertEqual(response.data["open_count"], 0)
+        self.assertEqual(response.data["loans"], [])
+
     def test_jwt_and_crud(self):
         self.assertEqual(self.api.get("/api/sites/").status_code, 401)
         self.assertEqual(self.api.get("/cuenta/registro/").status_code, 404)

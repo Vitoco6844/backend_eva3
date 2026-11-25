@@ -72,10 +72,10 @@ export function Signature({canvas}) {
       ctx.stroke();
     }
   }
-  return <fieldset><legend>Firma del responsable</legend>
+  return <fieldset className="signature"><legend>Firma del responsable</legend>
     <canvas aria-label="Recuadro para firmar" width="600" height="180" ref={canvas}
       onPointerDown={e => draw(e, true)} onPointerMove={e => draw(e, false)}
       onPointerUp={() => { active.current = false; }} onPointerCancel={() => { active.current = false; }}/>
-    <button type="button" className="secondary" onClick={() => canvas.current.getContext('2d').clearRect(0, 0, 600, 180)}>Borrar firma</button>
+    <button type="button" className="button secondary" onClick={() => canvas.current.getContext('2d').clearRect(0, 0, 600, 180)}>Borrar firma</button>
   </fieldset>;
 }

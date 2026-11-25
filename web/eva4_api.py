@@ -19,7 +19,7 @@ from accounts.administration import (
 )
 from accounts.models import User
 from accounts.permissions import can_administer, can_operate
-from inventory.models import Contractor
+from inventory.models import Asset, Contractor
 from inventory.views import (
     AssetViewSet,
     CategoryViewSet,
@@ -170,6 +170,28 @@ def health(request):
 
 
 @api_view(["GET"])
+def overview(request):
+    loans = Loan.objects.filter(closed_at=None)
+    return Response(
+        {
+            "available": Asset.objects.filter(
+                status="DISPONIBLE", rental_hold__isnull=True
+            ).count(),
+            "open_count": loans.count(),
+            "overdue_count": loans.filter(due_at__lt=timezone.now()).count(),
+            "pending_count": Charge.objects.filter(
+                paid_at=None, voided_at=None
+            ).count(),
+            "loans": list(
+                loans.order_by("-pk").values(
+                    "id", "contractor__name", "site__name", "due_at"
+                )[:6]
+            ),
+        }
+    )
+
+
+@api_view(["GET"])
 def alerts(request):
     now = timezone.now()
     overdue = Loan.objects.filter(closed_at=None, due_at__lt=now).order_by("due_at")
@@ -210,5 +232,6 @@ urlpatterns = [
     path("auth/me/", me),
     path("health/", health),
     path("alerts/", alerts),
+    path("overview/", overview),
     *router.urls,
 ]
