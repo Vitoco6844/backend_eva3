@@ -51,13 +51,15 @@ def _issue_approved_loan(
     from .models import RentalRequest, AssetHold
 
     req = RentalRequest.objects.get(pk=request_id, contractor_id=contractor_id)
-    if (
+    if not req.internal and (
         req.status != "PAGADA"
         or not req.charges.filter(
             kind="INITIAL", paid_at__isnull=False, voided_at=None
         ).exists()
     ):
         raise ValidationError("La solicitud debe tener su pago confirmado.")
+    if req.internal and req.status != "APROBADA":
+        raise ValidationError("La solicitud interna debe estar aprobada.")
     raw, digest = validate_signature(signature)
     contractor = Contractor.objects.select_for_update().get(pk=contractor_id)
     site = Site.objects.get(pk=site_id)
@@ -97,6 +99,7 @@ def _issue_approved_loan(
         if LoanItem.objects.filter(asset=asset, returned_at=None).exists():
             raise ValidationError("Herramienta ya prestada.")
     loan = Loan.objects.create(
+        billing_mode="INTERNAL" if req.internal else "PREPAID",
         contractor=contractor,
         site=site,
         responsible=responsible,

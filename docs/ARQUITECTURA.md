@@ -11,7 +11,7 @@ flowchart LR
  U --> A[API DRF]
  W --> S[Servicios de dominio]
  A --> S
- D[Django Admin] --> S
+ D[Administración BuildCorp] --> S
  D --> H[Consulta de documentos históricos]
  S --> P[(PostgreSQL)]
  S --> T[Webpay integración]

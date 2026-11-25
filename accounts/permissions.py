@@ -1,6 +1,16 @@
 from django.core.exceptions import PermissionDenied
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
+from .models import User
+
+
+def can_administer(user):
+    return bool(
+        user.is_authenticated
+        and user.is_active
+        and (user.is_superuser or user.role == User.Role.ADMIN)
+    )
+
 
 def can_operate(user):
     return bool(

@@ -1,14 +1,24 @@
+from django.conf import settings
 from django.db import transaction
 from rest_framework import viewsets, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from accounts.permissions import OperatorPermission
+from accounts.permissions import OperatorPermission, can_administer
 from . import models, serializers as schema
 from .services import transfer_asset, retire_asset
 
 
 class MasterViewSet(viewsets.ModelViewSet):
     permission_classes = [OperatorPermission]
+
+    def perform_destroy(self, instance):
+        if getattr(settings, "EVA4_INTERNAL", False) and not can_administer(
+            self.request.user
+        ):
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("Solo administración elimina registros.")
+        super().perform_destroy(instance)
 
     @transaction.atomic
     def update(self, request, *args, **kwargs):

@@ -1,7 +1,7 @@
 # Guion de defensa BuildCorp
 
 ## Antes de presentar
-Inicia PostgreSQL y Django con scripts/iniciar.ps1. Utiliza tu administrador existente (créalo solo si aún no existe), crea un bodeguero desde Admin y registra un cliente desde la tienda. El catálogo seed_demo no crea cuentas. Comprueba que PUBLIC_BASE_URL corresponde al host/puerto que usarás. Para presentar en AWS sigue DESPLIEGUE_EC2.md y prueba con su dirección pública.
+Inicia PostgreSQL y Django con scripts/iniciar.ps1. Utiliza tu administrador existente (créalo solo si aún no existe), crea un bodeguero desde Administración de BuildCorp y registra un cliente desde la tienda. El catálogo seed_demo no crea cuentas. Comprueba que PUBLIC_BASE_URL corresponde al host/puerto que usarás. Para presentar en AWS sigue DESPLIEGUE_EC2.md y prueba con su dirección pública.
 
 ## Demostración de la tienda pública
 
@@ -13,7 +13,7 @@ Las doce imágenes son referencias generadas con IA y se incluyen en el reposito
 
 ## Recorrido sugerido
 1. Explica el problema: pérdida de herramientas, poca trazabilidad y fallas imprevistas.
-2. Muestra Django Admin: modelos, búsquedas, filtros, usuario con rol y separación entre is_staff y rol de negocio. Los históricos son de solo lectura.
+2. Muestra Administración de BuildCorp: búsqueda de usuarios, creación de personal, roles, estado de las cuentas y accesos a las pantallas de operación.
 3. Crea una categoría o una obra y edítala; elimina un registro sin relaciones. Explica por qué un registro con historial no se borra.
 4. En inventario abre una herramienta, su bodega, tarifa y hoja de vida. Registra un traslado disponible y muestra origen, destino, usuario y fecha.
 5. Prepara y aprueba una solicitud de dos herramientas para un contratista activo; entra como titular y paga el período aprobado. Regresa a bodega, entrega con firma y muestra que ambas quedan En Uso.
@@ -39,7 +39,7 @@ Las doce imágenes son referencias generadas con IA y se incluyen en el reposito
 | Criterio | Dónde mostrarlo |
 |---|---|
 | PostgreSQL y migraciones | settings.py, migrations/, migrate --check y registros persistentes |
-| Django Admin | /admin/ con todos los modelos registrados |
+| Administración | /admin/ con templates propios y gestión de cuentas |
 | CRUD y reglas | datos maestros y servicios de entrega/devolución/mantenimiento/morosidad |
 | Seguridad y apoyo IA | roles, sesiones, CSRF, permisos por titular y prompts_ia.md |
 | EC2 y defensa | aplicación pública después de ejecutar DESPLIEGUE_EC2.md |

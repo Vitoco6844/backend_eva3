@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Usuarios | BuildCorp{% endblock %}
+{% block content %}
+<a class="back" href="{% url 'administration:index' %}">Volver a administración</a>
+<div class="page-heading">
+  <h1>Usuarios</h1>
+  <a class="button" href="{% url 'administration:create' %}">Crear cuenta de personal</a>
+</div>
+<form class="filters" method="get">
+  <label>Buscar<input name="q" value="{{ q }}" maxlength="150" placeholder="Nombre, usuario o correo"></label>
+  <button class="button secondary">Buscar</button>
+</form>
+<section class="panel table-wrap">
+  <table>
+    <thead>
+      <tr><th scope="col">Usuario</th><th scope="col">Correo</th><th scope="col">Rol</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr>
+    </thead>
+    <tbody>
+      {% for account in page %}
+        <tr>
+          <td><strong>{{ account.username }}</strong>{% if account.get_full_name %}<small>{{ account.get_full_name }}</small>{% endif %}</td>
+          <td>{{ account.email|default:"—" }}</td>
+          <td>{{ account.get_role_display }}</td>
+          <td>{% if account.is_active %}Activa{% else %}Inactiva{% endif %}</td>
+          <td>
+            {% if account.is_superuser or account.pk == user.pk %}
+              Protegida
+            {% else %}
+              <a href="{% url 'administration:edit' account.pk %}">Editar</a>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="empty">No se encontraron usuarios.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% include "pagination.html" %}
+{% endblock %}
