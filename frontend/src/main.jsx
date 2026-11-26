@@ -52,7 +52,7 @@ function Form({fields, initial, submit, close, signature, children, label = 'Gua
     {children}
     {signature && <Signature canvas={canvas}/>}
     {error && <p className="message error" role="alert">{error}</p>}
-    <div className="actions"><button className="button" disabled={busy}>{busy ? 'Guardando…' : label}</button>
+    <div className="actions"><button type="submit" className="button" disabled={busy}>{busy ? 'Guardando…' : label}</button>
       {close && <button type="button" className="button secondary" onClick={close}>Cancelar</button>}
     </div>
   </form>;
@@ -92,7 +92,7 @@ function Rows({state, columns}) {
 
 function Search({state}) {
   return <form className="filters" onSubmit={e => { e.preventDefault(); state.search(new FormData(e.currentTarget).get('q')); }}>
-    <input name="q" aria-label="Buscar" placeholder="Buscar" maxLength="150"/><button className="button secondary">Buscar</button>
+    <input name="q" aria-label="Buscar" placeholder="Buscar" maxLength="150"/><button type="submit" className="button secondary">Buscar</button>
   </form>;
 }
 

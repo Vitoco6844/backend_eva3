@@ -10,7 +10,7 @@ export const optional = (name, label, type = 'text') => field(name, label, type,
 export function Fields({fields, initial = {}}) {
   const [choices, setChoices] = useState({});
   const [error, setError] = useState('');
-  const sources = [...new Set(fields.map(f => f.source).filter(Boolean))].sort().join(' ');
+  const sources = [...new Set(fields.map(f => f.source).filter(Boolean))].sort((left, right) => left.localeCompare(right)).join(' ');
   useEffect(() => {
     let alive = true;
     if (sources) Promise.all(sources.split(' ').map(async source => [source, await all(source)]))
