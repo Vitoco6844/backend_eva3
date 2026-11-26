@@ -26,6 +26,7 @@ class RentalRequestSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "contractor_name",
+            "internal",
             "site_name",
             "site_address",
             "responsible",
@@ -75,7 +76,7 @@ class FulfillSerializer(serializers.Serializer):
         if unknown:
             raise serializers.ValidationError(
                 {
-                    key: "La entrega utiliza exclusivamente la cotización ya pagada."
+                    key: "La entrega utiliza los datos de la solicitud aprobada."
                     for key in unknown
                 }
             )

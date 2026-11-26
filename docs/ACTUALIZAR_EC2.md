@@ -88,7 +88,7 @@ curl -I http://127.0.0.1:8000/accounts/login/
 
 Abre `http://IP_ACTUAL/` sin sesión: debe aparecer la tienda, no un ingreso obligatorio. Revisa catálogo, ficha e imágenes; agrega un equipo y comprueba que recién al enviar pide cuenta. Registra un cliente de demostración y envía una solicitud. Desde bodega aprueba la cotización: las unidades deben quedar retenidas y aún no debe permitir entregar. Como cliente paga el período contratado con Webpay de integración; con el pago confirmado, vuelve a bodega y entrega con firma. Devuelve a tiempo y comprueba que no aparece otro cargo; el retraso genera únicamente su saldo. Comprueba también que un préstamo antiguo sigue accesible, con sus importes y pagos conservados. Una ruta inexistente debe mostrar «Volver al inicio» y conservar HTTP 404.
 
-Restablece la entrada cron que pausaste. El personal accede al panel en `/panel/`; Admin permanece en `/admin/`. Webpay continúa exclusivamente en integración.
+Restablece la entrada cron que pausaste. El personal accede al panel en `/panel/`; La administración de BuildCorp se abre en `/admin/`. Webpay continúa exclusivamente en integración.
 
 Si hay un fallo:
 

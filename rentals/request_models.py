@@ -11,6 +11,7 @@ class RentalRequest(models.Model):
         REJECTED = "RECHAZADA", "Rechazada"
         CANCELLED = "CANCELADA", "Cancelada"
 
+    internal = models.BooleanField(default=False, editable=False)
     requested_by = models.ForeignKey(
         "accounts.User", on_delete=models.PROTECT, related_name="rental_requests"
     )

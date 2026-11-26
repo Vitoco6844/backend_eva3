@@ -10,3 +10,5 @@ media/
 .playwright-cli/
 output/playwright/
 .ruff_cache/
+frontend/node_modules/
+frontend/dist/

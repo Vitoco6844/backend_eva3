@@ -86,7 +86,8 @@ def approve_request(*, request_id, site_id, quote, actor):
         record_event(
             asset, actor, asset.status, "RETENCION", f"Solicitud #{req.pk} aprobada"
         )
-    Charge.objects.create(rental_request=req, kind="INITIAL", amount=amount)
+    if not req.internal:
+        Charge.objects.create(rental_request=req, kind="INITIAL", amount=amount)
     return req
 
 

@@ -11,7 +11,7 @@ class AccountTests(DomainCase):
 
     def test_contractor_cannot_manage_users(self):
         self.client.force_login(self.customer)
-        self.assertEqual(self.client.get("/admin/accounts/user/").status_code, 302)
+        self.assertEqual(self.client.get("/admin/usuarios/").status_code, 403)
 
     def test_login_logout(self):
         self.assertTrue(

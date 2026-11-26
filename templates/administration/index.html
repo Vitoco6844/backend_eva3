@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Administración | BuildCorp{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <h1>Administración</h1>
+  <a class="button" href="{% url 'administration:users' %}">Gestionar usuarios</a>
+</div>
+<section class="panel">
+  <h2>Operaciones</h2>
+  <div class="actions">
+    <a class="button secondary" href="/inventory/assets/">Herramientas</a>
+    <a class="button secondary" href="/inventory/contractors/">Contratistas</a>
+    <a class="button secondary" href="/solicitudes/">Solicitudes</a>
+    <a class="button secondary" href="/rentals/">Préstamos</a>
+    <a class="button secondary" href="/maintenance/">Mantenimiento</a>
+    <a class="button secondary" href="/payments/">Cargos y pagos</a>
+  </div>
+</section>
+{% endblock %}

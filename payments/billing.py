@@ -19,6 +19,8 @@ def close_charge(loan):
     loan = Loan.objects.select_for_update().get(pk=loan.pk)
     if not loan.closed_at or loan.items.filter(returned_at=None).exists():
         raise ValidationError("Debes devolver todas las herramientas.")
+    if loan.billing_mode == "INTERNAL":
+        return None
     prepaid = loan.billing_mode == "PREPAID"
     if (
         prepaid

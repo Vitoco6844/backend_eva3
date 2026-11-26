@@ -8,6 +8,7 @@ class Loan(models.Model):
         choices=[
             ("LEGACY_POSTPAID", "Histórico: pago al devolver"),
             ("PREPAID", "Pago previo"),
+            ("INTERNAL", "Operación interna"),
         ],
         default="PREPAID",
     )

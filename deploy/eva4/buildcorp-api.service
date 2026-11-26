@@ -1,0 +1,15 @@
+[Unit]
+Description=BuildCorp EVA 4 API
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/buildcorp-eva4
+Environment=DJANGO_SETTINGS_MODULE=buildcorp.eva4_settings
+ExecStart=/home/ubuntu/buildcorp-eva4/.venv/bin/gunicorn --config deploy/gunicorn.conf.py --bind 0.0.0.0:8000 buildcorp.wsgi:application
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

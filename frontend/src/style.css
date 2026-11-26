@@ -1,0 +1,48 @@
+/* EVA 4 uses EVA 3's shared BuildCorp stylesheet. These rules adapt it to React controls. */
+.brand:is(button), .sidebar nav button, .metrics button, .link-button {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.brand:is(button) { padding: 0; text-align: left; }
+.sidebar nav .nav-group { display: grid; gap: 4px; }
+.sidebar nav .nav-group + .nav-group { border-top: 1px solid #51717a; padding-top: 10px; }
+.sidebar nav button {
+  color: #dfebea;
+  padding: 9px 12px;
+  border-radius: 5px;
+  text-align: left;
+}
+.sidebar nav button:hover, .sidebar nav button[aria-current] { background: #356070; color: #fff; }
+.sidebar nav button[aria-current] { box-shadow: inset 3px 0 var(--accent); }
+.metrics button {
+  color: var(--ink);
+  padding: 22px 18px;
+  border-right: 1px solid var(--line);
+  text-align: left;
+}
+.metrics button:first-child { padding-left: 0; }
+.metrics button:last-child { border-right: 0; }
+.metrics button:hover { background: #eeeade; }
+.link-button { color: var(--deep); text-decoration: underline; text-underline-offset: 3px; }
+.section-heading { gap: 12px; }
+.form-panel > label { display: block; margin-bottom: 16px; }
+.form-panel > label input:not([type=checkbox]), .form-panel > label select,
+.form-panel > label textarea { margin-top: 5px; }
+button[disabled] { opacity: .55; cursor: not-allowed; }
+.filters input { max-width: 240px; }
+.table-wrap td .actions { gap: 6px; margin-top: 0; }
+.table-wrap td .button { padding: 6px 10px; font-size: 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 16px; }
+.login-intro { display: flex; align-items: center; gap: 22px; }
+.brand-icon { width: 90px; height: 90px; object-fit: cover; border-radius: 8px; }
+.login .form-panel { max-width: 470px; }
+@media (max-width: 700px) {
+  .sidebar nav .nav-group { display: flex; flex: none; }
+  .sidebar nav .nav-group + .nav-group { padding: 0 0 0 8px; border: 0; border-left: 1px solid #51717a; }
+  .sidebar nav button { white-space: nowrap; padding: 8px; font-size: 13px; }
+  .account .text-button { margin-left: auto; }
+  .metrics button { border-bottom: 1px solid var(--line); padding: 15px; }
+  .metrics button:first-child { padding-left: 15px; }
+  .brand-icon { width: 64px; height: 64px; }
+}

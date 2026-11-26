@@ -61,6 +61,7 @@ def _submit_request(
     notes,
     submit_key,
     contractor_id=None,
+    internal=False,
 ):
     try:
         key = uuid.UUID(str(submit_key))
@@ -90,6 +91,8 @@ def _submit_request(
         "end": ends_at.astimezone(datetime_timezone.utc).isoformat(),
         "notes": notes.strip(),
     }
+    if internal:
+        payload.update(internal=True, contractor=contractor_id)
     digest = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
     contractor = Contractor.objects.select_for_update().get(
         pk=contractor_id or actor.contractor_id
@@ -125,6 +128,7 @@ def _submit_request(
     estimate = sum(a.daily_rate for a in assets) * _days(starts_at, ends_at)
     req = RentalRequest(
         requested_by=actor,
+        internal=internal,
         contractor=contractor,
         site_name=payload["site"],
         site_address=payload["address"],
@@ -183,15 +187,24 @@ def fulfill_request(
     contractor, req = locked_request(request_id)
     if req.status == "ENTREGADA" and req.loan_id:
         return req.loan
-    if req.status != "PAGADA":
+    expected = "APROBADA" if req.internal else "PAGADA"
+    if req.status != expected:
         raise ValidationError(
-            "Debes aprobar la solicitud y confirmar su pago antes de entregar."
+            "Debes aprobar la solicitud y, si corresponde, confirmar el pago."
         )
-    charge = Charge.objects.select_for_update().get(rental_request=req, kind="INITIAL")
-    if not charge.paid_at or charge.voided_at or charge.amount != req.approved_amount:
-        raise ValidationError(
-            "El pago inicial no está confirmado o no coincide con la aprobación."
+    charge = None
+    if not req.internal:
+        charge = Charge.objects.select_for_update().get(
+            rental_request=req, kind="INITIAL"
         )
+        if (
+            not charge.paid_at
+            or charge.voided_at
+            or charge.amount != req.approved_amount
+        ):
+            raise ValidationError(
+                "El pago inicial no está confirmado o no coincide con la aprobación."
+            )
     if (site_id is not None and site_id != req.approved_site_id) or (
         due_at is not None and due_at != req.ends_at
     ):
@@ -228,13 +241,18 @@ def fulfill_request(
             item.approved_daily_rate for item in lines if item.asset_id == line.asset_id
         )
         line.save(update_fields=["daily_rate"])
-    charge.loan = loan
-    charge.save(update_fields=["loan"])
+    if charge is not None:
+        charge.loan = loan
+        charge.save(update_fields=["loan"])
     req.holds.all().delete()
     req.loan = loan
     req.status = "ENTREGADA"
     req.resolved_by = actor
     req.resolved_at = now
-    req.resolution_reason = "Entrega firmada con pago previo confirmado"
+    req.resolution_reason = (
+        "Entrega interna firmada"
+        if req.internal
+        else "Entrega firmada con pago previo confirmado"
+    )
     req.save()
     return loan

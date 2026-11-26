@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | BuildCorp{% endblock %}
+{% block content %}
+<a class="back" href="{% url 'administration:users' %}">Volver a usuarios</a>
+<div class="page-heading"><h1>{{ title }}</h1></div>
+<section class="panel form-panel">
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div class="actions">
+      <button class="button" type="submit">Guardar cuenta</button>
+      <a class="button secondary" href="{% url 'administration:users' %}">Cancelar</a>
+    </div>
+  </form>
+</section>
+{% endblock %}
